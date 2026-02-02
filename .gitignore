@@ -36,6 +36,11 @@ yarn-error.*
 # local changelog
 CHANGELOG.md
 
+# Claude Code
+.claude/
+CLAUDE.md
+PLANNING.md
+
 # typescript
 *.tsbuildinfo
 
