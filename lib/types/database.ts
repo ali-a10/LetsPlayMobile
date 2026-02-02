@@ -41,6 +41,7 @@ export type Database = {
           avatar_url?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       events: {
         Row: {
@@ -88,6 +89,7 @@ export type Database = {
           price?: number | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       participants: {
         Row: {
@@ -105,8 +107,13 @@ export type Database = {
           user_id?: string;
           joined_at?: string;
         };
+        Relationships: [];
       };
     };
+    Views: {};
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
 };
 
