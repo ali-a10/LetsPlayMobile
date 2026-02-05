@@ -14,25 +14,36 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { colors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
+import { useOnboardingStore } from '../../lib/stores/onboardingStore';
 
+/** Step 1 of signup: collects name, email, password and creates auth user. */
 export default function SignupScreen() {
   const router = useRouter();
+  const setName = useOnboardingStore((state) => state.setName);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
 
   function validate() {
-    const newErrors: {
-      email?: string;
-      password?: string;
-      confirmPassword?: string;
-    } = {};
+    const newErrors: typeof errors = {};
+
+    if (!firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
 
     if (!email.trim()) {
       newErrors.email = 'Email is required';
@@ -69,7 +80,8 @@ export default function SignupScreen() {
     if (error) {
       Alert.alert('Signup failed', error.message);
     } else {
-      router.replace('/(auth)/complete-profile');
+      setName(firstName.trim(), lastName.trim());
+      router.replace('/(auth)/onboarding-details');
     }
   }
 
@@ -84,10 +96,30 @@ export default function SignupScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the community</Text>
+          <Text style={styles.subtitle}>Step 1 of 3</Text>
         </View>
 
         <View style={styles.form}>
+          <Input
+            label="First Name"
+            placeholder="John"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            autoComplete="given-name"
+            error={errors.firstName}
+          />
+
+          <Input
+            label="Last Name"
+            placeholder="Doe"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            autoComplete="family-name"
+            error={errors.lastName}
+          />
+
           <Input
             label="Email"
             placeholder="you@example.com"
@@ -120,7 +152,7 @@ export default function SignupScreen() {
           />
 
           <Button
-            title="Sign Up"
+            title="Continue"
             onPress={handleSignup}
             loading={loading}
             style={styles.button}
@@ -152,7 +184,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   title: {
     fontSize: 32,

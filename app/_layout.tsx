@@ -14,7 +14,6 @@ function AuthGate() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const onCompleteProfile = segments.at(1) === 'complete-profile';
 
     async function checkProfile() {
       if (!session) {
@@ -37,9 +36,9 @@ function AuthGate() {
         console.warn('Profile fetch error:', error.message);
       }
 
-      if (!profile && !onCompleteProfile) {
-        // Logged in but no profile — go to complete profile
-        router.replace('/(auth)/complete-profile');
+      if (!profile && !inAuthGroup) {
+        // Logged in but no profile — go to onboarding
+        router.replace('/(auth)/onboarding-details');
       } else if (profile && inAuthGroup) {
         // Has profile but still in auth group — go to main app
         router.replace('/(tabs)');
