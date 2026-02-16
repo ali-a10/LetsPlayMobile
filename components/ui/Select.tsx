@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  Keyboard,
 } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 
@@ -40,7 +41,10 @@ export function Select({
       {label && <Text style={styles.label}>{label}</Text>}
       <TouchableOpacity
         style={[styles.selector, error && styles.selectorError]}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setModalVisible(true);
+        }}
       >
         <Text style={[styles.selectorText, !selectedOption && styles.placeholder]}>
           {selectedOption?.label || placeholder}

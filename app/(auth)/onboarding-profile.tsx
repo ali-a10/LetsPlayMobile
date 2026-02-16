@@ -14,17 +14,7 @@ import { Button } from '../../components/ui/Button';
 import { colors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
-
-const SPORT_OPTIONS = [
-  { label: 'Basketball', value: 'basketball' },
-  { label: 'Soccer', value: 'soccer' },
-  { label: 'Tennis', value: 'tennis' },
-  { label: 'Volleyball', value: 'volleyball' },
-  { label: 'Running', value: 'running' },
-  { label: 'Swimming', value: 'swimming' },
-  { label: 'Cycling', value: 'cycling' },
-  { label: 'Golf', value: 'golf' },
-];
+import { SPORT_OPTIONS } from '../../lib/constants/sports';
 
 /** Step 3 of signup: collects optional profile details and inserts the profile row. */
 export default function OnboardingProfileScreen() {

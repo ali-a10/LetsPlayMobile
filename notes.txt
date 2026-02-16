@@ -1,0 +1,119 @@
+===============================================================================
+                        useState and useEffect Notes
+===============================================================================
+
+===============================================================================
+useState — Remembering Things
+===============================================================================
+
+useState lets your app remember information that can change.
+
+    const [count, setCount] = useState(0);
+
+- count      — The current value (starts at 0)
+- setCount   — A function to update that value
+- When you call setCount(5), React updates count to 5 and refreshes the screen
+
+Real-world analogy: A whiteboard. count is what's written on it, setCount is
+the act of erasing and writing something new.
+
+
+-------------------------------------------------------------------------------
+useState vs Static/Global Variables
+-------------------------------------------------------------------------------
+
+Similarities:
+- Both "remember" a value across time
+- Both persist while the app is running
+
+Key Differences:
+
+    Static/Global Variable          |  useState
+    --------------------------------|----------------------------------------
+    Lives forever (entire app       |  Lives only while that screen/component
+    lifetime)                       |  is visible
+    --------------------------------|----------------------------------------
+    One copy shared everywhere      |  Each component gets its own separate
+                                    |  copy
+    --------------------------------|----------------------------------------
+    Changing it doesn't update      |  Changing it automatically refreshes
+    the screen                      |  the screen
+    --------------------------------|----------------------------------------
+    Accessible from anywhere        |  Only accessible inside that component
+
+
+The Big Difference — Screen Updates:
+
+With a regular variable:
+
+    let count = 0;
+    count = 5;  // Value changes, but the screen shows nothing new
+
+With useState:
+
+    const [count, setCount] = useState(0);
+    setCount(5);  // Value changes AND React redraws the screen
+
+
+Lifespan Example:
+
+    // Screen A
+    const [name, setName] = useState("Ali");
+
+    // User navigates away from Screen A
+    // Screen A is destroyed — "name" is gone
+
+    // User comes back to Screen A
+    // It's recreated fresh — "name" is "Ali" again (the initial value)
+
+A global variable would have kept whatever value it had.
+
+
+===============================================================================
+useEffect — Reacting to Changes
+===============================================================================
+
+useEffect lets your app do something when certain things happen.
+
+    useEffect(() => {
+      // This code runs...
+    }, [dependencies]);
+
+The second argument (the array) controls when it runs:
+
+    Code                                |  When it runs
+    ------------------------------------|--------------------------------------
+    useEffect(() => {...}, [])          |  Once, when the screen first loads
+    ------------------------------------|--------------------------------------
+    useEffect(() => {...}, [userId])    |  Every time userId changes
+    ------------------------------------|--------------------------------------
+    useEffect(() => {...})              |  After every single render (rarely
+                                        |  wanted)
+
+Real-world analogy: A motion sensor light. "When someone enters the room
+(dependency changes), turn on the light (run the code)."
+
+
+===============================================================================
+Quick Example Together
+===============================================================================
+
+    const [user, setUser] = useState(null);      // Remember the current user
+
+    useEffect(() => {
+      fetchUserFromDatabase();                   // When the screen loads, go get the user
+    }, []);                                      // Empty array = only run once
+
+
+===============================================================================
+When You Actually Want Global/Persistent State
+===============================================================================
+
+For data that should survive across screens or app restarts, this project uses:
+
+- Zustand (in lib/stores/)  — global state shared across screens, lives in memory
+- Supabase                  — permanent storage in a database
+- AsyncStorage              — saves data to the device (survives app closing)
+
+So useState is more like a temporary notepad for one screen rather than a
+permanent global variable.
