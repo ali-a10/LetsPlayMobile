@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,11 +19,15 @@ import { colors } from '../../lib/constants/colors';
 import { SPORT_OPTIONS } from '../../lib/constants/sports';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/hooks/useAuth';
+import { friendlyErrorMessage } from '../../lib/utils/errors';
 
 /** Screen for creating a new sports event. */
 export default function CreateEventScreen() {
   const router = useRouter();
   const { user } = useAuth();
+
+  // Synchronous guard to prevent double submission
+  const submittingRef = useRef(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -48,6 +52,44 @@ export default function CreateEventScreen() {
     price?: string;
   }>({});
 
+  /** Strips invalid characters from price input, keeping digits, one dot, and max 2 decimal places. */
+  function handlePriceChange(text: string) {
+    let cleaned = text.replace(/[^0-9.]/g, '');
+    const dotIndex = cleaned.indexOf('.');
+    if (dotIndex !== -1) {
+      cleaned = cleaned.slice(0, dotIndex + 1) + cleaned.slice(dotIndex + 1).replace(/\./g, '');
+    }
+    const parts = cleaned.split('.');
+    if (parts[1]?.length > 2) {
+      cleaned = parts[0] + '.' + parts[1].slice(0, 2);
+    }
+    setPrice(cleaned);
+    if (errors.price) setErrors(prev => ({ ...prev, price: undefined }));
+  }
+
+  /** Normalizes the price to 2 decimal places when the user leaves the field. */
+  function handlePriceBlur() {
+    if (!price) return;
+    const num = parseFloat(price);
+    if (!isNaN(num) && num > 0) {
+      setPrice(num.toFixed(2));
+    } else if (price.endsWith('.')) {
+      setPrice(price.slice(0, -1));
+    }
+  }
+
+  /** Strips non-digit characters and shows an inline error if out of range. */
+  function handleMaxParticipantsChange(text: string) {
+    const cleaned = text.replace(/[^0-9]/g, '');
+    setMaxParticipants(cleaned);
+    const num = parseInt(cleaned, 10);
+    if (cleaned && (num < 2 || num > 100)) {
+      setErrors(prev => ({ ...prev, maxParticipants: 'Must be between 2 and 100' }));
+    } else {
+      setErrors(prev => ({ ...prev, maxParticipants: undefined }));
+    }
+  }
+
   /** Formats a Date for user-friendly display. */
   function formatDisplayDateTime(d: Date): string {
     return d.toLocaleString('en-US', {
@@ -67,6 +109,7 @@ export default function CreateEventScreen() {
       const existing = date || new Date();
       selectedDate.setHours(existing.getHours(), existing.getMinutes());
       setDate(selectedDate);
+      if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
 
       // On Android, chain to the time picker after date selection
       if (Platform.OS === 'android') {
@@ -107,9 +150,13 @@ export default function CreateEventScreen() {
       newErrors.location = 'Location is required';
     }
 
-    const parsedMax = parseInt(maxParticipants, 10);
-    if (maxParticipants.trim() && (isNaN(parsedMax) || parsedMax < 2)) {
-      newErrors.maxParticipants = 'Must be at least 2 participants';
+    if (!maxParticipants.trim()) {
+      newErrors.maxParticipants = 'Max participants is required';
+    } else {
+      const parsedMax = parseInt(maxParticipants, 10);
+      if (isNaN(parsedMax) || parsedMax < 2 || parsedMax > 100) {
+        newErrors.maxParticipants = 'Must be between 2 and 100';
+      }
     }
 
     if (isPaid) {
@@ -125,46 +172,52 @@ export default function CreateEventScreen() {
 
   /** Validates the form, inserts the event into Supabase, and navigates to home on success. */
   async function handleCreate() {
+    if (submittingRef.current) return;
     if (!validate()) return;
     if (!user) {
       Alert.alert('Error', 'You must be logged in to create an event.');
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
 
-    const { error } = await supabase.from('events').insert([
-      {
-        host_id: user.id,
-        title: title.trim(),
-        sport: sport!,
-        date: date!.toISOString(),
-        location: location.trim(),
-        description: description.trim() || null,
-        max_participants: parseInt(maxParticipants, 10) || 10,
-        is_paid: isPaid,
-        price: isPaid ? parseFloat(price) : null,
-      },
-    ]);
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      setTitle('');
-      setSport(null);
-      setDate(null);
-      setLocation('');
-      setDescription('');
-      setMaxParticipants('10');
-      setIsPaid(false);
-      setPrice('');
-      setErrors({});
-
-      Alert.alert('Success', 'Your event has been created!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+    try {
+      const { error } = await supabase.from('events').insert([
+        {
+          host_id: user.id,
+          title: title.trim(),
+          sport: sport!,
+          date: date!.toISOString(),
+          location: location.trim(),
+          description: description.trim() || null,
+          max_participants: parseInt(maxParticipants, 10) || 10,
+          is_paid: isPaid,
+          price: isPaid ? parseFloat(price) : null,
+        },
       ]);
+
+      if (error) {
+        console.error('Event creation failed:', error);
+        Alert.alert('Error', friendlyErrorMessage(error));
+      } else {
+        setTitle('');
+        setSport(null);
+        setDate(null);
+        setLocation('');
+        setDescription('');
+        setMaxParticipants('10');
+        setIsPaid(false);
+        setPrice('');
+        setErrors({});
+
+        Alert.alert('Success', 'Your event has been created!', [
+          { text: 'OK', onPress: () => router.replace('/(tabs)') },
+        ]);
+      }
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
     }
   }
 
@@ -186,7 +239,11 @@ export default function CreateEventScreen() {
             label="Title"
             placeholder="e.g. Saturday Morning Basketball"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(text) => {
+              setTitle(text);
+              if (errors.title) setErrors(prev => ({ ...prev, title: undefined }));
+            }}
+            maxLength={100}
             error={errors.title}
           />
 
@@ -195,7 +252,10 @@ export default function CreateEventScreen() {
             placeholder="Select a sport"
             value={sport}
             options={SPORT_OPTIONS}
-            onSelect={setSport}
+            onSelect={(value) => {
+              setSport(value);
+              if (errors.sport) setErrors(prev => ({ ...prev, sport: undefined }));
+            }}
             error={errors.sport}
           />
 
@@ -275,7 +335,11 @@ export default function CreateEventScreen() {
             label="Location"
             placeholder="e.g. Central Park Court 3"
             value={location}
-            onChangeText={setLocation}
+            onChangeText={(text) => {
+              setLocation(text);
+              if (errors.location) setErrors(prev => ({ ...prev, location: undefined }));
+            }}
+            maxLength={100}
             error={errors.location}
           />
 
@@ -284,19 +348,23 @@ export default function CreateEventScreen() {
             placeholder="Add details about the event..."
             value={description}
             onChangeText={setDescription}
+            maxLength={500}
             multiline
             numberOfLines={4}
             style={styles.textArea}
           />
 
-          <Input
-            label="Max Participants"
-            placeholder="10"
-            value={maxParticipants}
-            onChangeText={setMaxParticipants}
-            keyboardType="number-pad"
-            error={errors.maxParticipants}
-          />
+          <View style={styles.fieldContainer}>
+            <Input
+              label="Max Participants"
+              placeholder="10"
+              value={maxParticipants}
+              onChangeText={handleMaxParticipantsChange}
+              keyboardType="number-pad"
+              error={errors.maxParticipants}
+            />
+            <Text style={styles.hintText}>Max 100 participants</Text>
+          </View>
 
           {/* Paid event toggle */}
           <View style={styles.switchRow}>
@@ -311,10 +379,11 @@ export default function CreateEventScreen() {
 
           {isPaid && (
             <Input
-              label="Price"
+              label="Price ($)"
               placeholder="0.00"
               value={price}
-              onChangeText={setPrice}
+              onChangeText={handlePriceChange}
+              onBlur={handlePriceBlur}
               keyboardType="decimal-pad"
               error={errors.price}
             />
@@ -413,6 +482,11 @@ const styles = StyleSheet.create({
   pickerButton: {
     height: 36,
     paddingHorizontal: 16,
+  },
+  hintText: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: -12,
   },
   submitButton: {
     marginTop: 24,
