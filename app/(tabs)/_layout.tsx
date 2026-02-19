@@ -13,6 +13,7 @@ export default function TabLayout() {
         options={{
           title: 'Events',
           tabBarLabel: 'Home',
+          headerShown: false,
         }}
       />
       <Tabs.Screen

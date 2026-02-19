@@ -57,6 +57,7 @@ export type Database = {
           max_participants: number;
           is_paid: boolean;
           price: number | null;
+          current_participants: number;
           created_at: string;
         };
         Insert: {
@@ -72,6 +73,7 @@ export type Database = {
           max_participants?: number;
           is_paid?: boolean;
           price?: number | null;
+          current_participants?: number;
           created_at?: string;
         };
         Update: {
@@ -87,6 +89,7 @@ export type Database = {
           max_participants?: number;
           is_paid?: boolean;
           price?: number | null;
+          current_participants?: number;
           created_at?: string;
         };
         Relationships: [];
