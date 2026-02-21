@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,22 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  Pressable,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../lib/constants/colors';
-import { useEvents } from '../../lib/hooks/useEvents';
+import { useEvents, EventWithHost } from '../../lib/hooks/useEvents';
 import { useFilterStore } from '../../lib/stores/filterStore';
 import { EventCard } from '../../components/events/EventCard';
 import { SportChips } from '../../components/events/SportChips';
-import { Event } from '../../lib/types/database';
+
+/** Height of the search bar row (bar itself + top margin). */
+const SEARCH_BAR_HEIGHT = 48;
+const SEARCH_BAR_MARGIN_TOP = 16;
+const ANIMATED_TOTAL_HEIGHT = SEARCH_BAR_HEIGHT + SEARCH_BAR_MARGIN_TOP;
 
 /** Main event feed screen with search, sport filters, and scrollable event list. */
 export default function HomeScreen() {
@@ -26,6 +32,20 @@ export default function HomeScreen() {
   const sport = useFilterStore((s) => s.sport);
   const searchText = useFilterStore((s) => s.searchText);
   const setSearchText = useFilterStore((s) => s.setSearchText);
+
+  const [searchVisible, setSearchVisible] = useState(false);
+  const animatedHeight = useRef(new Animated.Value(0)).current;
+
+  /** Slides the search bar into or out of view and updates visibility state. */
+  const toggleSearch = () => {
+    const opening = !searchVisible;
+    setSearchVisible(opening);
+    Animated.timing(animatedHeight, {
+      toValue: opening ? ANIMATED_TOTAL_HEIGHT : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
 
   const filteredEvents = useMemo(() => {
     if (!events) return [];
@@ -48,7 +68,7 @@ export default function HomeScreen() {
     return result;
   }, [events, sport, searchText]);
 
-  const renderItem = ({ item }: { item: Event }) => (
+  const renderItem = ({ item }: { item: EventWithHost }) => (
     <EventCard
       event={item}
       onPress={() => router.push(`/event/${item.id}`)}
@@ -66,19 +86,29 @@ export default function HomeScreen() {
             <Text style={styles.headerTitle}>Find & Join</Text>
             <Text style={styles.headerSubtitle}>Local Sports Games Near You</Text>
           </View>
-          <Ionicons name="filter-outline" size={24} color={colors.white} />
+          <Pressable
+            onPress={toggleSearch}
+            hitSlop={8}
+            accessibilityLabel="Toggle search bar"
+            accessibilityRole="button"
+          >
+            <Ionicons name="filter-outline" size={24} color={colors.white} />
+          </Pressable>
         </View>
 
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={colors.gray[400]} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search games, sports, locations..."
-            placeholderTextColor={colors.gray[400]}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
+        {/* Animated wrapper collapses to height 0 when search is hidden */}
+        <Animated.View style={[styles.searchWrapper, { height: animatedHeight }]}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search-outline" size={20} color={colors.gray[400]} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search games, sports, locations..."
+              placeholderTextColor={colors.gray[400]}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
+        </Animated.View>
       </View>
 
       {/* Content */}
@@ -137,7 +167,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    // No marginBottom here — spacing is owned by the animated wrapper so
+    // it collapses completely when the search bar is hidden.
   },
   headerTitle: {
     fontSize: 26,
@@ -149,6 +180,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     opacity: 0.8,
     marginTop: 2,
+    marginBottom: 5,
+  },
+  searchWrapper: {
+    overflow: 'hidden',
+    // justifyContent keeps the bar pinned to the bottom of the animated
+    // region so it slides in from the top rather than stretching oddly.
+    justifyContent: 'flex-end',
   },
   searchBar: {
     flexDirection: 'row',
@@ -156,7 +194,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[800],
     borderRadius: 12,
     paddingHorizontal: 14,
-    height: 48,
+    height: SEARCH_BAR_HEIGHT,
+    marginTop: SEARCH_BAR_MARGIN_TOP,
     gap: 10,
   },
   searchInput: {

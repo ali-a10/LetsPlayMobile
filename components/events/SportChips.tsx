@@ -38,6 +38,7 @@ export function SportChips() {
 const styles = StyleSheet.create({
   scrollView: {
     flexGrow: 0,
+    flexShrink: 0,
     marginVertical: 8,
   },
   container: {
