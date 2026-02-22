@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[100],
   },
   activeChip: {
-    backgroundColor: colors.teal,
+    backgroundColor: colors.darkCyan,
   },
   chipText: {
     fontSize: 14,

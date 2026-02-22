@@ -67,9 +67,7 @@ function getSportLabel(sport: string): string {
 export function EventCard({ event, onPress }: EventCardProps) {
   const isFree = !event.is_paid || !event.price;
   const sportColor = getSportColor(event.sport);
-  const hostName = event.profiles
-    ? `${event.profiles.first_name} ${event.profiles.last_name}`
-    : 'Unknown host';
+  const hostFirstName = event.profiles?.first_name ?? 'Host';
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -92,14 +90,15 @@ export function EventCard({ event, onPress }: EventCardProps) {
 
       {/* Bottom section: gray body with date, location, host, and pills */}
       <View style={styles.body}>
-        {/* Row 1: date + price pill */}
+        {/* Row 1: date + price */}
         <View style={styles.bodyRow}>
           <View style={styles.dateRow}>
             <Ionicons name="calendar-outline" size={14} color={colors.textLight} />
             <Text style={styles.bodyText}>{formatEventDate(event.date)}</Text>
           </View>
-          <View style={[styles.pill, styles.pillWhite]}>
-            <Text style={[styles.pillText, styles.pillTextDark]}>
+          {/* no price pill — price displayed as plain body text */}
+          <View style={styles.priceRow}>
+            <Text style={styles.bodyText}>
               {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
             </Text>
           </View>
@@ -115,7 +114,7 @@ export function EventCard({ event, onPress }: EventCardProps) {
           </View>
           <View style={styles.hostRow}>
             <View style={styles.avatarCircle} />
-            <Text style={styles.hostName} numberOfLines={1}>{hostName}</Text>
+            <Text style={styles.hostName} numberOfLines={1}>{hostFirstName}</Text>
           </View>
         </View>
 
@@ -144,8 +143,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: `${colors.teal}4D`,
-    marginBottom: 12,
+    borderColor: `${colors.teal}26`,
+    marginBottom: 15,
     // Shadow
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
@@ -164,8 +163,6 @@ const styles = StyleSheet.create({
     paddingTop: 7,
     paddingBottom: 6,
     backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   title: {
     flex: 1,
@@ -200,6 +197,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 4,
   },
   dateRow: {
     flexDirection: 'row',
@@ -229,7 +227,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.white,
   },
   hostName: {
     fontSize: 13,
@@ -237,36 +235,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     flexShrink: 1,
   },
-  // Shared pill style for participants and price
-  pill: {
+  // no price pill — price row matches date/location layout
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    // backgroundColor: colors.teal,
-    borderWidth: 1,
-    // borderColor: colors.teal,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    gap: 5,
     flexShrink: 0,
-  },
-  pillText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  pillWhite: {
-    backgroundColor: colors.white, //'#0080a404',
-    borderColor: colors.border,
-  },
-  pillTextDark: {
-    color: colors.teal,
   },
   capacityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginTop: 4,
+    marginBottom: 4,
   },
   capacityText: {
     fontSize: 13,
@@ -277,13 +258,13 @@ const styles = StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.white,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.teal,
+    backgroundColor: colors.darkCyan,
   },
 });

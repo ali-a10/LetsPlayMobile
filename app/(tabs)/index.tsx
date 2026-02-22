@@ -115,10 +115,6 @@ export default function HomeScreen() {
       <View style={styles.content}>
         <SportChips />
 
-        <View style={styles.separator} />
-
-        <Text style={styles.sectionTitle}>Featured Events</Text>
-
         {isLoading ? (
           <ActivityIndicator
             size="large"
@@ -208,20 +204,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-  },
-  separator: {
-    height: 3,
-    backgroundColor: colors.secondary,
-    marginHorizontal: 16,
-    borderRadius: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    paddingHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 12,
   },
   list: {
     paddingHorizontal: 16,
