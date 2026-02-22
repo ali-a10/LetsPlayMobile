@@ -3,6 +3,7 @@ export const colors = {
   teal: '#00475a',
   green: '#0ed385',
   cyan: '#00cece',
+  darkCyan: '#02b2b2ff',
   mint: '#03dac6',
 
   // Neutrals

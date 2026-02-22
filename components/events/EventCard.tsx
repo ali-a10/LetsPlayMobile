@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
-import { Event } from '../../lib/types/database';
+import { EventWithHost } from '../../lib/hooks/useEvents';
 
 interface EventCardProps {
-  event: Event;
+  event: EventWithHost;
   onPress: () => void;
 }
 
@@ -20,39 +20,119 @@ function formatEventDate(isoString: string): string {
   return `${weekday}, ${month} ${day} \u2022 ${time}`;
 }
 
-/** Displays a single event as a pressable card with image, details, and badge. */
+/** Returns the background hex color for a given sport name. */
+function getSportColor(sport: string): string {
+  switch (sport?.toLowerCase()) {
+    case 'basketball': return '#F59E0B';
+    case 'soccer':     return '#16A34A';
+    case 'swimming':   return '#0284C7';
+    case 'tennis':     return '#a3cb04ff';
+    case 'volleyball': return '#DC2626';
+    case 'running':    return '#7C3AED';
+    case 'golf':       return '#15803D';
+    default:           return colors.primary;
+  }
+}
+
+/** Returns the Ionicons icon name for a given sport name. */
+function getSportIcon(sport: string): keyof typeof Ionicons.glyphMap {
+  switch (sport?.toLowerCase()) {
+    case 'basketball': return 'basketball-outline';
+    case 'soccer':     return 'football-outline';
+    case 'swimming':   return 'water-outline';
+    case 'tennis':     return 'tennisball-outline';
+    case 'volleyball': return 'ellipse-outline';
+    case 'running':    return 'body-outline';
+    case 'golf':       return 'flag-outline';
+    default:           return 'trophy-outline';
+  }
+}
+
+/** Returns a human-readable display name for a given sport slug. */
+function getSportLabel(sport: string): string {
+  switch (sport?.toLowerCase()) {
+    case 'basketball': return 'Basketball';
+    case 'soccer':     return 'Soccer';
+    case 'swimming':   return 'Swimming';
+    case 'tennis':     return 'Tennis';
+    case 'volleyball': return 'Volleyball';
+    case 'running':    return 'Running';
+    case 'golf':       return 'Golf';
+    default:           return sport ?? 'Sport';
+  }
+}
+
+
+/** Displays a single event as a pressable card with a two-section layout: title/sport badge on top, details on a gray body below. */
 export function EventCard({ event, onPress }: EventCardProps) {
   const isFree = !event.is_paid || !event.price;
+  const sportColor = getSportColor(event.sport);
+  const hostFirstName = event.profiles?.first_name ?? 'Host';
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.imagePlaceholder} />
-
-      <View style={styles.details}>
-        <Text style={styles.title} numberOfLines={1}>
+      {/* Top section: title + sport badge */}
+      <View style={styles.header}>
+        <Text style={styles.title} numberOfLines={2}>
           {event.title}
         </Text>
-        <Text style={styles.dateText}>{formatEventDate(event.date)}</Text>
-
-        <View style={styles.bottomRow}>
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={14} color={colors.textLight} />
-            <Text style={styles.infoText}>{event.location}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="people-outline" size={14} color={colors.secondary} />
-            <Text style={styles.participantText}>
-              {event.current_participants}/{event.max_participants}
-            </Text>
-          </View>
+        <View style={[styles.sportBadge, { borderColor: sportColor }]}>
+          <Ionicons
+            name={getSportIcon(event.sport)}
+            size={14}
+            color={sportColor}
+          />
+          <Text style={[styles.sportBadgeText, { color: sportColor }]}>
+            {getSportLabel(event.sport)}
+          </Text>
         </View>
       </View>
 
-      <View style={[styles.badge, isFree ? styles.freeBadge : styles.paidBadge]}>
-        <Text style={styles.badgeText}>
-          {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
-        </Text>
+      {/* Bottom section: gray body with date, location, host, and pills */}
+      <View style={styles.body}>
+        {/* Row 1: date + price */}
+        <View style={styles.bodyRow}>
+          <View style={styles.dateRow}>
+            <Ionicons name="calendar-outline" size={14} color={colors.textLight} />
+            <Text style={styles.bodyText}>{formatEventDate(event.date)}</Text>
+          </View>
+          {/* no price pill — price displayed as plain body text */}
+          <View style={styles.priceRow}>
+            <Text style={styles.bodyText}>
+              {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+            </Text>
+          </View>
+        </View>
+
+        {/* Row 2: location + host */}
+        <View style={styles.bodyRow}>
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={14} color={colors.textLight} />
+            <Text style={styles.bodyText} numberOfLines={1}>
+              {event.location}
+            </Text>
+          </View>
+          <View style={styles.hostRow}>
+            <View style={styles.avatarCircle} />
+            <Text style={styles.hostName} numberOfLines={1}>{hostFirstName}</Text>
+          </View>
+        </View>
+
+        {/* Row 3: participants progress bar */}
+        <View style={styles.capacityRow}>
+          <Ionicons name="people-outline" size={14} color={colors.teal} />
+          <Text style={styles.capacityText}>
+            {event.current_participants}/{event.max_participants} players
+          </Text>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.min((event.current_participants / event.max_participants) * 100, 100)}%` },
+              ]}
+            />
+          </View>
+        </View>
       </View>
     </Pressable>
   );
@@ -60,71 +140,131 @@ export function EventCard({ event, onPress }: EventCardProps) {
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: `${colors.teal}26`,
+    marginBottom: 15,
+    // Shadow
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  // -- Top section --
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 7,
+    paddingBottom: 6,
     backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  imagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    backgroundColor: colors.gray[200],
-  },
-  details: {
-    flex: 1,
-    marginLeft: 12,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 2,
+    lineHeight: 20,
   },
-  dateText: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginBottom: 6,
-  },
-  bottomRow: {
+  sportBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  infoText: {
-    fontSize: 13,
-    color: colors.textLight,
-  },
-  participantText: {
-    fontSize: 13,
-    color: colors.secondary,
-    fontWeight: '500',
-  },
-  badge: {
-    paddingHorizontal: 10,
+    gap: 4,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginLeft: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    backgroundColor: colors.white,
+    flexShrink: 0,
   },
-  freeBadge: {
-    backgroundColor: colors.accent,
-  },
-  paidBadge: {
-    backgroundColor: colors.accent,
-  },
-  badgeText: {
+  sportBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.white,
+  },
+  // -- Bottom section --
+  body: {
+    backgroundColor: '#0080a413',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  bodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+    marginRight: 8,
+  },
+  bodyText: {
+    fontSize: 15,
+    color: colors.teal,
+    flexShrink: 1,
+  },
+  hostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexShrink: 0,
+  },
+  avatarCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.white,
+  },
+  hostName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+    flexShrink: 1,
+  },
+  // no price pill — price row matches date/location layout
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  capacityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  capacityText: {
+    fontSize: 13,
+    color: colors.teal,
+    fontWeight: '500',
+    flexShrink: 0,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: colors.white,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.darkCyan,
   },
 });

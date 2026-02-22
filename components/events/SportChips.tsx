@@ -38,6 +38,7 @@ export function SportChips() {
 const styles = StyleSheet.create({
   scrollView: {
     flexGrow: 0,
+    flexShrink: 0,
     marginVertical: 8,
   },
   container: {
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[100],
   },
   activeChip: {
-    backgroundColor: colors.teal,
+    backgroundColor: colors.darkCyan,
   },
   chipText: {
     fontSize: 14,
