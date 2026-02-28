@@ -137,7 +137,12 @@ export type Database = {
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      join_event: {
+        Args: { p_event_id: string };
+        Returns: undefined;
+      };
+    };
     Enums: {};
     CompositeTypes: {};
   };
