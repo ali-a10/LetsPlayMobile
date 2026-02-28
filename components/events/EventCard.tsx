@@ -2,64 +2,11 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
 import { EventWithHost } from '../../lib/hooks/useEvents';
+import { getSportColor, getSportIcon, getSportLabel, formatEventDate } from '../../lib/utils/sports';
 
 interface EventCardProps {
   event: EventWithHost;
   onPress: () => void;
-}
-
-/** Formats an ISO date string like "Wed, Dec 11 • 7:45PM". */
-function formatEventDate(isoString: string): string {
-  const d = new Date(isoString);
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const month = d.toLocaleDateString('en-US', { month: 'short' });
-  const day = d.getDate();
-  const time = d
-    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    .replace(' ', '');
-  return `${weekday}, ${month} ${day} \u2022 ${time}`;
-}
-
-/** Returns the background hex color for a given sport name. */
-function getSportColor(sport: string): string {
-  switch (sport?.toLowerCase()) {
-    case 'basketball': return '#F59E0B';
-    case 'soccer':     return '#16A34A';
-    case 'swimming':   return '#0284C7';
-    case 'tennis':     return '#a3cb04ff';
-    case 'volleyball': return '#DC2626';
-    case 'running':    return '#7C3AED';
-    case 'golf':       return '#15803D';
-    default:           return colors.primary;
-  }
-}
-
-/** Returns the Ionicons icon name for a given sport name. */
-function getSportIcon(sport: string): keyof typeof Ionicons.glyphMap {
-  switch (sport?.toLowerCase()) {
-    case 'basketball': return 'basketball-outline';
-    case 'soccer':     return 'football-outline';
-    case 'swimming':   return 'water-outline';
-    case 'tennis':     return 'tennisball-outline';
-    case 'volleyball': return 'ellipse-outline';
-    case 'running':    return 'body-outline';
-    case 'golf':       return 'flag-outline';
-    default:           return 'trophy-outline';
-  }
-}
-
-/** Returns a human-readable display name for a given sport slug. */
-function getSportLabel(sport: string): string {
-  switch (sport?.toLowerCase()) {
-    case 'basketball': return 'Basketball';
-    case 'soccer':     return 'Soccer';
-    case 'swimming':   return 'Swimming';
-    case 'tennis':     return 'Tennis';
-    case 'volleyball': return 'Volleyball';
-    case 'running':    return 'Running';
-    case 'golf':       return 'Golf';
-    default:           return sport ?? 'Sport';
-  }
 }
 
 
