@@ -92,7 +92,15 @@ export type Database = {
           current_participants?: number;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'events_host_id_fkey';
+            columns: ['host_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       participants: {
         Row: {
@@ -110,7 +118,22 @@ export type Database = {
           user_id?: string;
           joined_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'participants_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'participants_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {};
