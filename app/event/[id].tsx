@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
@@ -29,6 +30,7 @@ export default function EventDetailScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   const handleJoinPress = () => {
     setJoinError(null);
@@ -52,7 +54,7 @@ export default function EventDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.secondary} />
       </View>
     );
   }
@@ -76,6 +78,10 @@ export default function EventDetailScreen() {
   const hostName = event.profiles
     ? `${event.profiles.first_name} ${event.profiles.last_name}`
     : 'Unknown';
+  const fillPercent = Math.min(
+    (event.current_participants / event.max_participants) * 100,
+    100
+  );
 
   /** Renders the appropriate CTA button based on user/event state. */
   const renderCTA = () => {
@@ -111,78 +117,150 @@ export default function EventDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Back button */}
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Teal header section */}
+      <View style={styles.header}>
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={22} color={colors.white} />
         </Pressable>
 
-        {/* Sport color accent strip */}
-        <View style={[styles.accentStrip, { backgroundColor: sportColor }]} />
-
-        {/* Title */}
-        <Text style={styles.title}>{event.title}</Text>
-
-        {/* Sport badge + price */}
-        <View style={styles.badgeRow}>
-          <View style={[styles.sportBadge, { borderColor: sportColor }]}>
-            <Ionicons name={getSportIcon(event.sport)} size={14} color={sportColor} />
-            <Text style={[styles.sportBadgeText, { color: sportColor }]}>
-              {getSportLabel(event.sport)}
-            </Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <View style={styles.headerMeta}>
+            <View style={[styles.sportBadge, { backgroundColor: `${sportColor}22`, borderColor: sportColor }]}>
+              <Ionicons name={getSportIcon(event.sport)} size={12} color={sportColor} />
+              <Text style={[styles.sportBadgeText, { color: sportColor }]}>
+                {getSportLabel(event.sport)}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.price}>{isFree ? 'Free' : `$${event.price?.toFixed(2)}`}</Text>
         </View>
+      </View>
 
-        {/* Date + time */}
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color={colors.textLight} />
-          <Text style={styles.infoText}>
-            {formatDate(event.date)} • {formatTime(event.date)}
-          </Text>
+      {/* Rounded content area */}
+      <View style={styles.contentArea}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Details card */}
+          <View style={styles.detailsCard}>
+            <View style={styles.detailRow}>
+              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
+                <Ionicons name="calendar-outline" size={16} color={colors.teal} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Date & Time</Text>
+                <Text style={styles.detailValue}>
+                  {formatDate(event.date)} at {formatTime(event.date)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.detailRow}>
+              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
+                <Ionicons name="location-outline" size={16} color={colors.teal} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Location</Text>
+                <Text style={styles.detailValue}>{event.location}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.detailRow}>
+              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
+                <Ionicons name="person-outline" size={16} color={colors.teal} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Hosted by</Text>
+                <Text style={styles.detailValue}>{hostName}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.detailRow}>
+              <View style={[styles.iconCircle, { backgroundColor: `${colors.green}14` }]}>
+                <Ionicons name="cash-outline" size={16} color={colors.green} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Price</Text>
+                <Text style={[styles.detailValue, { color: colors.green }]}>
+                  {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Description card */}
+          {event.description ? (
+            <View style={styles.descriptionCard}>
+              <Text style={styles.descriptionTitle}>Description</Text>
+              <Text
+                style={styles.descriptionText}
+                numberOfLines={descriptionExpanded ? undefined : 4}
+              >
+                {event.description}
+              </Text>
+              <Pressable onPress={() => setDescriptionExpanded((v) => !v)}>
+                <Text style={styles.viewMoreText}>
+                  {descriptionExpanded ? 'View less' : 'View more'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* Capacity card */}
+          <View style={styles.capacityCard}>
+            <View style={styles.capacityHeader}>
+              <Ionicons name="people-outline" size={16} color={colors.teal} />
+              <Text style={styles.capacityTitle}>
+                {event.current_participants}/{event.max_participants} players
+              </Text>
+              <Text
+                style={[
+                  styles.spotsText,
+                  spotsLeft <= 3 && spotsLeft > 0 && styles.spotsWarning,
+                  spotsLeft === 0 && styles.spotsFull,
+                ]}
+              >
+                {spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${fillPercent}%` },
+                  spotsLeft <= 3 && spotsLeft > 0 && { backgroundColor: colors.warning },
+                  spotsLeft === 0 && { backgroundColor: colors.error },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Participants */}
+          <View style={styles.participantsWrapper}>
+            <ParticipantList
+              participants={event.participants}
+              maxParticipants={event.max_participants}
+              hostId={event.host_id}
+            />
+          </View>
+        </ScrollView>
+
+        {/* Sticky bottom CTA */}
+        <View style={styles.stickyBar}>
+          {renderCTA()}
         </View>
-
-        {/* Location */}
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={16} color={colors.textLight} />
-          <Text style={styles.infoText}>{event.location}</Text>
-        </View>
-
-        {/* Host */}
-        <View style={styles.infoRow}>
-          <View style={styles.avatarCircle} />
-          <Text style={styles.infoText}>Hosted by {hostName}</Text>
-        </View>
-
-        {/* Spots left */}
-        <View style={styles.infoRow}>
-          <Ionicons
-            name="people-outline"
-            size={16}
-            color={spotsLeft <= 3 ? colors.warning : colors.textLight}
-          />
-          <Text style={[styles.infoText, spotsLeft <= 3 && styles.warningText]}>
-            {spotsLeft > 0 ? `${spotsLeft} spots left` : 'Event full'}
-          </Text>
-        </View>
-
-        {/* Description */}
-        {event.description ? (
-          <Text style={styles.description}>{event.description}</Text>
-        ) : null}
-
-        {/* Participants */}
-        <ParticipantList
-          participants={event.participants}
-          maxParticipants={event.max_participants}
-          hostId={event.host_id}
-        />
-      </ScrollView>
-
-      {/* Sticky bottom CTA */}
-      <View style={styles.stickyBar}>
-        {renderCTA()}
       </View>
 
       <JoinConfirmModal
@@ -197,15 +275,16 @@ export default function EventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.teal,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    backgroundColor: colors.background,
   },
   errorText: {
     fontSize: 15,
@@ -221,38 +300,38 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 120,
+
+  // -- Header --
+  header: {
+    backgroundColor: colors.teal,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   backBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingRight: 16,
     alignSelf: 'flex-start',
   },
-  accentStrip: {
-    height: 4,
-    borderRadius: 2,
-    marginBottom: 16,
+  headerContent: {
+    gap: 8,
   },
-  title: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.text,
-    lineHeight: 32,
-    marginBottom: 12,
+    color: colors.white,
+    lineHeight: 30,
   },
-  badgeRow: {
+  headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: 8,
+    marginTop: 4,
   },
   sportBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1.5,
@@ -261,41 +340,156 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  price: {
+  // -- Content area --
+  contentArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+
+  // -- Description card --
+  descriptionCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: `${colors.teal}18`,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  descriptionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.teal,
+    marginBottom: 6,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textLight,
+    marginTop: 8,
+  },
+
+  // -- Details card --
+  detailsCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: `${colors.teal}18`,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 10,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTextGroup: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textLight,
+    marginBottom: 3,
+  },
+  detailValue: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
-  infoRow: {
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginLeft: 54,
+    marginVertical: 2,
+  },
+
+  // -- Capacity card --
+  capacityCard: {
+    backgroundColor: `${colors.teal}0A`,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: `${colors.teal}18`,
+  },
+  capacityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 10,
   },
-  infoText: {
+  capacityTitle: {
     fontSize: 14,
-    color: colors.textLight,
+    fontWeight: '600',
+    color: colors.teal,
     flex: 1,
   },
-  warningText: {
+  spotsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.teal,
+  },
+  spotsWarning: {
     color: colors.warning,
   },
-  avatarCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.gray[200],
+  spotsFull: {
+    color: colors.error,
   },
-  description: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-    marginTop: 4,
-    marginBottom: 16,
+  progressTrack: {
+    height: 6,
+    backgroundColor: `${colors.teal}14`,
+    borderRadius: 3,
+    overflow: 'hidden',
   },
+  progressFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.darkCyan,
+  },
+
+  // -- Participants wrapper --
+  participantsWrapper: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: `${colors.teal}18`,
+  },
+
+  // -- Sticky CTA bar --
   stickyBar: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 38,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.white,

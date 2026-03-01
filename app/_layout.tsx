@@ -1,4 +1,4 @@
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 import { useAuth } from '../lib/hooks/useAuth';
@@ -48,7 +48,7 @@ function AuthGate() {
     checkProfile();
   }, [session, loading, segments]);
 
-  return <Slot />;
+  return <Stack screenOptions={{ headerShown: false, gestureEnabled: true }} />;
 }
 
 export default function RootLayout() {

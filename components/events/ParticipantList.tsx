@@ -62,11 +62,7 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    marginTop: 8,
-  },
+  container: {},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
