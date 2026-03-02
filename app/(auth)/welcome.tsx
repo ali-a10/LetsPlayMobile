@@ -71,7 +71,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    width: '100%',
+    width: '85%',
+    alignSelf: 'center',
   },
   outlineButton: {
     borderColor: colors.white,
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.white,
     opacity: 0.8,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
 });
