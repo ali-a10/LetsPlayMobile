@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   // -- Bottom section --
   body: {
-    backgroundColor: '#0080a40c',
+    backgroundColor: '#0080a408',
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,

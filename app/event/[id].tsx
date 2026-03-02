@@ -520,13 +520,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.error,
+    backgroundColor: colors.error,
   },
   leaveBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.error,
+    color: colors.white,
   },
   fullBtn: {
     backgroundColor: colors.gray[200],
