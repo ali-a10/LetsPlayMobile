@@ -1,0 +1,19 @@
+Improvements / Follow-up Tasks
+
+1. Button outline spinner color (Button.tsx:46)
+   The outline variant's ActivityIndicator spinner is hardcoded to colors.primary (teal).
+   On dark backgrounds (e.g. welcome screen), this would be invisible if the button ever
+   enters a loading state. Update Button.tsx to accept a custom spinner color or infer it
+   from the background context.
+
+2. Accessibility labels on Sign Up / Log In buttons (welcome.tsx)
+   The Button component does not forward an accessibilityLabel prop. The "Sign Up" and
+   "Log In" buttons on the welcome screen have no explicit accessibility label. Update
+   the Button component to accept and forward an accessibilityLabel prop, then add labels
+   to both buttons on the welcome screen.
+
+3. Duplicate logo in login.tsx and signup.tsx
+   Both login.tsx and signup.tsx render their own "LetsPlay / Find your next game" header.
+   Now that the welcome screen owns the branded entry point, users navigating
+   Welcome → Log In or Welcome → Sign Up see the logo twice. Remove the logo/header
+   section from login.tsx and signup.tsx in a follow-up PR.

@@ -18,7 +18,7 @@ function AuthGate() {
     async function checkProfile() {
       if (!session) {
         if (!inAuthGroup) {
-          router.replace('/(auth)/login');
+          router.replace('/(auth)/welcome');
         }
         return;
       }
