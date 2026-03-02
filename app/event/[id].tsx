@@ -521,12 +521,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.error,
   },
   leaveBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.error,
   },
   fullBtn: {
     backgroundColor: colors.gray[200],
