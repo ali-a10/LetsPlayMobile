@@ -26,13 +26,15 @@ export default function WelcomeScreen() {
           title="Log In"
           onPress={() => router.push('/(auth)/login')}
           variant="outline"
-          style={[styles.button, { borderColor: colors.white }]}
+          style={[styles.button, styles.outlineButton]}
           textStyle={styles.outlineButtonText}
         />
 
         <TouchableOpacity
           onPress={() => router.push('/(auth)/how-it-works')}
           style={styles.linkButton}
+          accessibilityLabel="How it works"
+          accessibilityRole="button"
         >
           <Text style={styles.linkText}>How it works →</Text>
         </TouchableOpacity>
@@ -70,6 +72,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+  },
+  outlineButton: {
+    borderColor: colors.white,
   },
   outlineButtonText: {
     color: colors.white,
