@@ -21,7 +21,7 @@ export function useEventDetail(eventId: string) {
   const { user } = useAuth();
 
   return useQuery<EventDetail>({
-    queryKey: ['event', eventId],
+    queryKey: ['event', eventId, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
@@ -49,6 +49,6 @@ export function useEventDetail(eventId: string) {
         isFull: raw.current_participants >= raw.max_participants,
       } as EventDetail;
     },
-    enabled: !!eventId,
+    enabled: !!eventId && !!user,
   });
 }
