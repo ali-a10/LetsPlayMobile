@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { Profile } from '../../lib/types/database';
@@ -8,6 +9,7 @@ import { colors } from '../../lib/constants/colors';
 
 /** Displays the current user's name, email, and a logout button. */
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.name}>
         {profile?.first_name} {profile?.last_name}
       </Text>
@@ -69,7 +71,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 60,
     paddingHorizontal: 24,
     backgroundColor: colors.background,
   },
