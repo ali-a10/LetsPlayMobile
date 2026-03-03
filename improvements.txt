@@ -17,3 +17,20 @@ Improvements / Follow-up Tasks
    Now that the welcome screen owns the branded entry point, users navigating
    Welcome → Log In or Welcome → Sign Up see the logo twice. Remove the logo/header
    section from login.tsx and signup.tsx in a follow-up PR.
+
+4. Runtime import of Ionicons in sports utility (lib/utils/sports.ts:1)
+   The file imports Ionicons at runtime but only uses it for the return type annotation
+   of getSportIcon. Change to `import type { Ionicons }` to avoid pulling the icon
+   library into a pure utility module's bundle.
+
+5. useLocalSearchParams id type safety (app/event/[id].tsx:26)
+   Expo Router's useLocalSearchParams types `id` as `string | string[]`. Both
+   useEventDetail and useJoinEvent accept `string`. Normalize with:
+   `const eventId = Array.isArray(id) ? id[0] : id ?? '';`
+   Low risk in practice since [id].tsx always receives a string, but would satisfy
+   strict TypeScript.
+
+6. useJoinEvent has no guard on empty eventId (lib/hooks/useJoinEvent.ts)
+   Unlike useEventDetail which has `enabled: !!eventId`, the mutation has no protection
+   against being called with an empty string. Add a guard at the top of mutationFn:
+   `if (!eventId) throw new Error('No event ID provided.');`
