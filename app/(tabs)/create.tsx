@@ -183,6 +183,7 @@ export default function CreateEventScreen() {
     setLoading(true);
 
     try {
+      // Host is automatically enrolled as a participant via the auto_enroll_host_on_event_create trigger
       const { error } = await supabase.from('events').insert([
         {
           host_id: user.id,
