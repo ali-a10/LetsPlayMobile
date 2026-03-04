@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { colors } from '../../lib/constants/colors';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useMyJoinedEvents } from '../../lib/hooks/useMyJoinedEvents';
+import { useMyHostedEvents } from '../../lib/hooks/useMyHostedEvents';
 import { EventCard } from '../../components/events/EventCard';
 import { EventWithHost } from '../../lib/hooks/useEvents';
 
@@ -32,6 +33,14 @@ export default function MyEventsScreen() {
     refetch: refetchJoined,
   } = useMyJoinedEvents(userId);
 
+  const {
+    data: hostedEvents,
+    isLoading: hostedLoading,
+    isRefetching: hostedRefetching,
+    error: hostedError,
+    refetch: refetchHosted,
+  } = useMyHostedEvents(userId);
+
   const renderItem = ({ item }: { item: EventWithHost }) => (
     <EventCard
       event={item}
@@ -39,8 +48,17 @@ export default function MyEventsScreen() {
     />
   );
 
-  const renderJoinedContent = () => {
-    if (joinedLoading) {
+  /** Renders loading, error, empty, or populated state for a tab. */
+  const renderTabContent = (
+    isLoading: boolean,
+    isRefetching: boolean,
+    error: Error | null,
+    refetch: () => void,
+    events: EventWithHost[] | undefined,
+    emptyText: string,
+    emptyCta: React.ReactNode
+  ) => {
+    if (isLoading) {
       return (
         <ActivityIndicator
           size="large"
@@ -50,36 +68,34 @@ export default function MyEventsScreen() {
       );
     }
 
-    if (joinedError) {
+    if (error) {
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>Failed to load events</Text>
-          <Text style={styles.retryText} onPress={() => refetchJoined()}>
-            Tap to retry
-          </Text>
+          <Pressable onPress={refetch} accessibilityRole="button">
+            <Text style={styles.retryText}>Tap to retry</Text>
+          </Pressable>
         </View>
       );
     }
 
-    if (!joinedEvents || joinedEvents.length === 0) {
+    if (!events || events.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>You haven't joined any upcoming events.</Text>
-          <Pressable onPress={() => router.push('/(tabs)')}>
-            <Text style={styles.ctaText}>Browse Events</Text>
-          </Pressable>
+          <Text style={styles.emptyText}>{emptyText}</Text>
+          {emptyCta}
         </View>
       );
     }
 
     return (
       <FlatList
-        data={joinedEvents}
+        data={events}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        onRefresh={refetchJoined}
-        refreshing={joinedRefetching}
+        onRefresh={refetch}
+        refreshing={isRefetching}
       />
     );
   };
@@ -91,6 +107,7 @@ export default function MyEventsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Events</Text>
+        <Text style={styles.headerSubtitle}>Your upcoming events</Text>
       </View>
 
       {/* Content */}
@@ -115,16 +132,29 @@ export default function MyEventsScreen() {
           </Pressable>
         </View>
 
-        {activeTab === 0 ? (
-          renderJoinedContent()
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>You're not hosting any upcoming events.</Text>
-            <Pressable onPress={() => router.push('/(tabs)/create')}>
-              <Text style={styles.ctaText}>Create an Event</Text>
-            </Pressable>
-          </View>
-        )}
+        {activeTab === 0
+          ? renderTabContent(
+              joinedLoading,
+              joinedRefetching,
+              joinedError,
+              refetchJoined,
+              joinedEvents,
+              "You haven't joined any upcoming events.",
+              <Pressable style={styles.ctaButton} onPress={() => router.push('/(tabs)')}>
+                <Text style={styles.ctaText}>Browse Events</Text>
+              </Pressable>
+            )
+          : renderTabContent(
+              hostedLoading,
+              hostedRefetching,
+              hostedError,
+              refetchHosted,
+              hostedEvents,
+              "You're not hosting any upcoming events.",
+              <Pressable style={styles.ctaButton} onPress={() => router.push('/(tabs)/create')}>
+                <Text style={styles.ctaText}>Create an Event</Text>
+              </Pressable>
+            )}
       </View>
     </SafeAreaView>
   );
@@ -146,6 +176,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.white,
+    opacity: 0.8,
+    marginTop: 4,
+  },
   content: {
     flex: 1,
     backgroundColor: colors.background,
@@ -159,7 +195,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.teal,
+    borderColor: colors.darkCyan,
     overflow: 'hidden',
   },
   segment: {
@@ -169,7 +205,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   segmentActive: {
-    backgroundColor: colors.teal,
+    backgroundColor: colors.darkCyan,
   },
   segmentText: {
     fontSize: 14,
@@ -178,6 +214,8 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: colors.white,
+    fontWeight: '700',
+    fontSize: 15,
   },
   list: {
     paddingHorizontal: 16,
@@ -187,19 +225,26 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 40,
+    justifyContent: 'center',
     paddingHorizontal: 20,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textLight,
     textAlign: 'center',
   },
+  ctaButton: {
+    marginTop: 16,
+    backgroundColor: colors.darkCyan,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
   ctaText: {
-    fontSize: 14,
-    color: colors.secondary,
-    marginTop: 8,
+    fontSize: 16,
+    color: colors.white,
     fontWeight: '600',
   },
   retryText: {
