@@ -9,6 +9,7 @@ import {
   Switch,
   Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
@@ -223,6 +224,7 @@ export default function CreateEventScreen() {
   }
 
   return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
     <KeyboardAwareScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
@@ -398,10 +400,15 @@ export default function CreateEventScreen() {
           />
         </View>
     </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
