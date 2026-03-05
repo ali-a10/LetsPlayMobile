@@ -8,6 +8,9 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'P0003') {
     return 'This event is now full.';
   }
+  if (error.code === 'P0004') {
+    return 'You are not a participant of this event.';
+  }
   if (msg.includes('jwt') || msg.includes('token')) {
     return 'Your session has expired. Please log in again.';
   }

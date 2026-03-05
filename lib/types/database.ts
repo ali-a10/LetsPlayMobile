@@ -142,6 +142,10 @@ export type Database = {
         Args: { p_event_id: string };
         Returns: undefined;
       };
+      leave_event: {
+        Args: { p_event_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {};
     CompositeTypes: {};

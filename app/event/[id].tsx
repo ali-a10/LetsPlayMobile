@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
 import { useEventDetail } from '../../lib/hooks/useEventDetail';
 import { useJoinEvent } from '../../lib/hooks/useJoinEvent';
+import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
 import { ParticipantList } from '../../components/events/ParticipantList';
-import { JoinConfirmModal } from '../../components/events/JoinConfirmModal';
+import { ConfirmModal } from '../../components/events/ConfirmModal';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
@@ -32,6 +33,10 @@ export default function EventDetailScreen() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
+  const leaveMutation = useLeaveEvent(id);
+  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+
   const handleJoinPress = () => {
     setJoinError(null);
     setModalVisible(true);
@@ -48,6 +53,25 @@ export default function EventDetailScreen() {
     if (!joinMutation.isPending) {
       setModalVisible(false);
       setJoinError(null);
+    }
+  };
+
+  const handleLeavePress = () => {
+    setLeaveError(null);
+    setLeaveModalVisible(true);
+  };
+
+  const handleLeaveConfirm = () => {
+    leaveMutation.mutate(undefined, {
+      onSuccess: () => setLeaveModalVisible(false),
+      onError: (err) => setLeaveError(err.message),
+    });
+  };
+
+  const handleLeaveCancel = () => {
+    if (!leaveMutation.isPending) {
+      setLeaveModalVisible(false);
+      setLeaveError(null);
     }
   };
 
@@ -96,7 +120,7 @@ export default function EventDetailScreen() {
       return (
         <Pressable
           style={styles.leaveBtn}
-          onPress={() => Alert.alert('Coming Soon', 'Leave functionality is not yet available.')}
+          onPress={handleLeavePress}
         >
           <Text style={styles.leaveBtnText}>Leave Event</Text>
         </Pressable>
@@ -263,12 +287,22 @@ export default function EventDetailScreen() {
         </View>
       </View>
 
-      <JoinConfirmModal
+      <ConfirmModal
         visible={modalVisible}
         isPending={joinMutation.isPending}
         error={joinError}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        type="join"
+      />
+
+      <ConfirmModal
+        visible={leaveModalVisible}
+        isPending={leaveMutation.isPending}
+        error={leaveError}
+        onConfirm={handleLeaveConfirm}
+        onCancel={handleLeaveCancel}
+        type="leave"
       />
     </SafeAreaView>
   );
