@@ -42,8 +42,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hidden from tab bar — accessible as modal via FAB */}
-      <Tabs.Screen name="create" options={{ href: null }} />
+      {/* Hidden from tab bar */}
       <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );

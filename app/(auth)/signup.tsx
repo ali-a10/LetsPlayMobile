@@ -10,6 +10,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { colors } from '../../lib/constants/colors';
@@ -86,96 +88,118 @@ export default function SignupScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Step 1 of 3</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Input
-            label="First Name"
-            placeholder="John"
-            value={firstName}
-            onChangeText={setFirstName}
-            autoCapitalize="words"
-            autoComplete="given-name"
-            error={errors.firstName}
-          />
-
-          <Input
-            label="Last Name"
-            placeholder="Doe"
-            value={lastName}
-            onChangeText={setLastName}
-            autoCapitalize="words"
-            autoComplete="family-name"
-            error={errors.lastName}
-          />
-
-          <Input
-            label="Email"
-            placeholder="you@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            error={errors.email}
-          />
-
-          <Input
-            label="Password"
-            placeholder="At least 6 characters"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            error={errors.password}
-          />
-
-          <Input
-            label="Confirm Password"
-            placeholder="Re-enter your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            error={errors.confirmPassword}
-          />
-
-          <Button
-            title="Continue"
-            onPress={handleSignup}
-            loading={loading}
-            style={styles.button}
-          />
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.link}>Log in</Text>
-              </TouchableOpacity>
-            </Link>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Step 1 of 3</Text>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.form}>
+            <Input
+              label="First Name"
+              placeholder="John"
+              value={firstName}
+              onChangeText={setFirstName}
+              autoCapitalize="words"
+              autoComplete="given-name"
+              error={errors.firstName}
+            />
+
+            <Input
+              label="Last Name"
+              placeholder="Doe"
+              value={lastName}
+              onChangeText={setLastName}
+              autoCapitalize="words"
+              autoComplete="family-name"
+              error={errors.lastName}
+            />
+
+            <Input
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              error={errors.email}
+            />
+
+            <Input
+              label="Password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              error={errors.password}
+            />
+
+            <Input
+              label="Confirm Password"
+              placeholder="Re-enter your password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              error={errors.confirmPassword}
+            />
+
+            <Button
+              title="Continue"
+              onPress={handleSignup}
+              loading={loading}
+              style={styles.button}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <Link href="/(auth)/login" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.link}>Log in</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  container: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

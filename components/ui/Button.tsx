@@ -14,7 +14,7 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'outline';
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   textStyle?: TextStyle;
 }
 

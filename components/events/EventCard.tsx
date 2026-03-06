@@ -17,7 +17,10 @@ export function EventCard({ event, onPress }: EventCardProps) {
   const hostFirstName = event.profiles?.first_name ?? 'Host';
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+    >
       {/* Top section: title + sport badge */}
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={2}>
@@ -99,6 +102,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     overflow: 'hidden',
+  },
+  cardPressed: {
+    opacity: 0.75,
+    backgroundColor: '#f0f0f0',
+    borderColor: `${colors.teal}80`,
   },
   // -- Top section --
   header: {

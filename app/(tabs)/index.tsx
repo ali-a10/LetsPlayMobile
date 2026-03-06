@@ -9,6 +9,7 @@ import {
   StatusBar,
   Pressable,
   Animated,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -144,6 +145,17 @@ export default function HomeScreen() {
           />
         )}
       </View>
+
+      {/* Floating Action Button — navigates to the create-event screen */}
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.8}
+        onPress={() => router.push('/create-event')}
+        accessibilityLabel="Create event"
+        accessibilityRole="button"
+      >
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -225,5 +237,21 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     marginTop: 8,
     fontWeight: '500',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

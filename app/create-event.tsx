@@ -12,15 +12,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { Select } from '../../components/ui/Select';
-import { colors } from '../../lib/constants/colors';
-import { SPORT_OPTIONS } from '../../lib/constants/sports';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../lib/hooks/useAuth';
-import { friendlyErrorMessage } from '../../lib/utils/errors';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
+import { colors } from '../lib/constants/colors';
+import { SPORT_OPTIONS } from '../lib/constants/sports';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/hooks/useAuth';
+import { friendlyErrorMessage } from '../lib/utils/errors';
 
 /** Screen for creating a new sports event. */
 export default function CreateEventScreen() {
@@ -225,6 +226,18 @@ export default function CreateEventScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Fixed back button header */}
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+
     <KeyboardAwareScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
@@ -407,6 +420,13 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: colors.background,
   },
   container: {
