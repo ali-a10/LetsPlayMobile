@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/ui/Button';
+import { SportsFieldBackground } from '../../components/ui/SportsFieldBackground';
 import { colors } from '../../lib/constants/colors';
 
 /** Welcome/landing screen shown to unauthenticated users before login or signup. */
@@ -9,6 +10,8 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
+      <SportsFieldBackground />
+
       <View style={styles.hero}>
         <Text style={styles.logo}>LetsPlay</Text>
         <Text style={styles.tagline}>Find your next game</Text>
