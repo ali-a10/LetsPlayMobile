@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   readOnlyText: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textLight,
   },
   dateButton: {
     borderWidth: 1,
