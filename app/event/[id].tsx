@@ -144,14 +144,27 @@ export default function EventDetailScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Teal header section */}
       <View style={styles.header}>
-        <Pressable
-          style={styles.backBtn}
-          onPress={() => router.back()}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="arrow-back" size={22} color={colors.white} />
-        </Pressable>
+        <View style={styles.headerTopRow}>
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="arrow-back" size={22} color={colors.white} />
+          </Pressable>
+
+          {event.isUserHost && (
+            <Pressable
+              style={styles.editBtn}
+              onPress={() => router.push(`/edit-event/${id}`)}
+              accessibilityLabel="Edit event"
+              accessibilityRole="button"
+            >
+              <Ionicons name="create-outline" size={22} color={colors.white} />
+            </Pressable>
+          )}
+        </View>
 
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle} numberOfLines={2}>
@@ -341,10 +354,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   backBtn: {
     paddingVertical: 10,
     paddingRight: 16,
     alignSelf: 'flex-start',
+  },
+  editBtn: {
+    paddingVertical: 10,
+    paddingLeft: 16,
+    alignSelf: 'flex-end',
   },
   headerContent: {
     gap: 8,
