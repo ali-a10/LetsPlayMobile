@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useCallback, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -19,6 +19,7 @@ import { colors } from '../../lib/constants/colors';
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ joined: 0, hosted: 0 });
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
       {/* Account Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-        <MenuItem icon="create-outline" label="Edit Profile" />
+        <MenuItem icon="create-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
         <MenuItem icon="mail-outline" label="Email Preferences" />
         <MenuItem icon="settings-outline" label="Settings" />
         <MenuItem icon="shield-checkmark-outline" label="Privacy Policy" />
@@ -147,9 +148,9 @@ export default function ProfileScreen() {
 }
 
 /** Renders a single menu row with an icon, label, and chevron. */
-function MenuItem({ icon, label }: { icon: string; label: string }) {
+function MenuItem({ icon, label, onPress }: { icon: string; label: string; onPress?: () => void }) {
   return (
-    <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
+    <TouchableOpacity style={styles.menuItem} activeOpacity={0.6} onPress={onPress}>
       <Ionicons name={icon as any} size={22} color={colors.gray[500]} />
       <Text style={styles.menuLabel}>{label}</Text>
       <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} />
