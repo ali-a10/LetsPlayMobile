@@ -240,7 +240,11 @@ export default function EditProfileScreen() {
                 title={sport.label}
                 variant={favouriteSports.includes(sport.value) ? 'primary' : 'outline'}
                 onPress={() => toggleSport(sport.value)}
-                style={styles.sportButton}
+                style={
+                  favouriteSports.includes(sport.value)
+                    ? [styles.sportButton, styles.sportButtonSelected]
+                    : styles.sportButton
+                }
               />
             ))}
           </View>
@@ -262,6 +266,7 @@ export default function EditProfileScreen() {
           onPress={handleSave}
           loading={saving}
           style={styles.saveButton}
+          textStyle={styles.saveButtonText}
         />
       </KeyboardAwareScrollView>
     </View>
@@ -347,6 +352,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
+  sportButtonSelected: {
+    backgroundColor: colors.darkCyan,
+  },
 
   // Text area
   textArea: {
@@ -357,5 +365,9 @@ const styles = StyleSheet.create({
   // Save
   saveButton: {
     marginTop: 24,
+    backgroundColor: colors.green,
+  },
+  saveButtonText: {
+    color: colors.white,
   },
 });
