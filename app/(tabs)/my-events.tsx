@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,6 @@ export default function MyEventsScreen() {
   const {
     data: joinedEvents,
     isLoading: joinedLoading,
-    isRefetching: joinedRefetching,
     error: joinedError,
     refetch: refetchJoined,
   } = useMyJoinedEvents(userId);
@@ -36,7 +35,6 @@ export default function MyEventsScreen() {
   const {
     data: hostedEvents,
     isLoading: hostedLoading,
-    isRefetching: hostedRefetching,
     error: hostedError,
     refetch: refetchHosted,
   } = useMyHostedEvents(userId);
@@ -48,12 +46,23 @@ export default function MyEventsScreen() {
     />
   );
 
+  // Tracks whether a pull-to-refresh gesture is active (avoids showing the spinner for background refetches).
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+
+  /** Wraps a refetch call so the refresh indicator only shows for user-initiated pulls. */
+  const createPullRefresh = useCallback(
+    (refetch: () => Promise<unknown>) => async () => {
+      setManualRefreshing(true);
+      try { await refetch(); } finally { setManualRefreshing(false); }
+    },
+    []
+  );
+
   /** Renders loading, error, empty, or populated state for a tab. */
   const renderTabContent = (
     isLoading: boolean,
-    isRefetching: boolean,
     error: Error | null,
-    refetch: () => void,
+    refetch: () => Promise<unknown>,
     events: EventWithHost[] | undefined,
     emptyText: string,
     emptyCta: React.ReactNode
@@ -94,8 +103,8 @@ export default function MyEventsScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        onRefresh={refetch}
-        refreshing={isRefetching}
+        onRefresh={createPullRefresh(refetch)}
+        refreshing={manualRefreshing}
       />
     );
   };
@@ -135,7 +144,6 @@ export default function MyEventsScreen() {
         {activeTab === 0
           ? renderTabContent(
               joinedLoading,
-              joinedRefetching,
               joinedError,
               refetchJoined,
               joinedEvents,
@@ -146,7 +154,6 @@ export default function MyEventsScreen() {
             )
           : renderTabContent(
               hostedLoading,
-              hostedRefetching,
               hostedError,
               refetchHosted,
               hostedEvents,

@@ -6,7 +6,6 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
-  Switch,
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
@@ -386,29 +385,17 @@ export default function EditEventScreen() {
             <Text style={styles.hintText}>Max 100 participants</Text>
           </View>
 
-          {/* Paid event toggle — only shown for paid events, locked ON */}
+          {/* Price field — only shown for paid events */}
           {event.is_paid && (
-            <>
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Paid Event</Text>
-                <Switch
-                  value={true}
-                  disabled
-                  trackColor={{ false: colors.gray[200], true: colors.secondary }}
-                  thumbColor={colors.primary}
-                />
-              </View>
-
-              <Input
-                label="Price ($)"
-                placeholder="0.00"
-                value={price}
-                onChangeText={handlePriceChange}
-                onBlur={handlePriceBlur}
-                keyboardType="decimal-pad"
-                error={errors.price}
-              />
-            </>
+            <Input
+              label="Price ($)"
+              placeholder="0.00"
+              value={price}
+              onChangeText={handlePriceChange}
+              onBlur={handlePriceBlur}
+              keyboardType="decimal-pad"
+              error={errors.price}
+            />
           )}
 
           <Button
@@ -510,18 +497,6 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingVertical: 8,
-  },
-  switchLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
   },
   pickerActions: {
     flexDirection: 'row',
