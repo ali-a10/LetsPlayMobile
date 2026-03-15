@@ -351,6 +351,7 @@ const styles = StyleSheet.create({
   sportButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderWidth: 1,
   },
   sportButtonSelected: {
     backgroundColor: colors.darkCyan,

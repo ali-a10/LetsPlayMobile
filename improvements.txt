@@ -1,5 +1,7 @@
 Improvements / Follow-up Tasks
 
+- allow hosts to remove users (later can give them the option to add a reason as to why they're removing that user)
+
 1. Button outline spinner color (Button.tsx:46)
    The outline variant's ActivityIndicator spinner is hardcoded to colors.primary (teal).
    On dark backgrounds (e.g. welcome screen), this would be invisible if the button ever
