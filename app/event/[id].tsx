@@ -111,8 +111,9 @@ export default function EventDetailScreen() {
   const renderCTA = () => {
     if (event.isUserHost) {
       return (
-        <Pressable style={styles.hostBtn} disabled>
-          <Text style={styles.hostBtnText}>You're the Host</Text>
+        <Pressable style={styles.editEventBtn} onPress={() => router.push(`/edit-event/${id}`)}>
+          <Ionicons name="create-outline" size={18} color={colors.white} />
+          <Text style={styles.editEventBtnText}>Edit Event</Text>
         </Pressable>
       );
     }
@@ -154,16 +155,6 @@ export default function EventDetailScreen() {
             <Ionicons name="arrow-back" size={22} color={colors.white} />
           </Pressable>
 
-          {event.isUserHost && (
-            <Pressable
-              style={styles.editBtn}
-              onPress={() => router.push(`/edit-event/${id}`)}
-              accessibilityLabel="Edit event"
-              accessibilityRole="button"
-            >
-              <Ionicons name="create-outline" size={22} color={colors.white} />
-            </Pressable>
-          )}
         </View>
 
         <View style={styles.headerContent}>
@@ -187,9 +178,7 @@ export default function EventDetailScreen() {
           {/* Details card */}
           <View style={styles.detailsCard}>
             <View style={styles.detailRow}>
-              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
-                <Ionicons name="calendar-outline" size={16} color={colors.teal} />
-              </View>
+              <Ionicons name="calendar-outline" size={23} color={colors.cyan} />
               <View style={styles.detailTextGroup}>
                 <Text style={styles.detailLabel}>Date & Time</Text>
                 <Text style={styles.detailValue}>
@@ -201,9 +190,7 @@ export default function EventDetailScreen() {
             <View style={styles.divider} />
 
             <View style={styles.detailRow}>
-              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
-                <Ionicons name="location-outline" size={16} color={colors.teal} />
-              </View>
+              <Ionicons name="location-outline" size={23} color={colors.cyan} />
               <View style={styles.detailTextGroup}>
                 <Text style={styles.detailLabel}>Location</Text>
                 <Text style={styles.detailValue}>{event.location}</Text>
@@ -213,21 +200,7 @@ export default function EventDetailScreen() {
             <View style={styles.divider} />
 
             <View style={styles.detailRow}>
-              <View style={[styles.iconCircle, { backgroundColor: `${colors.teal}14` }]}>
-                <Ionicons name="person-outline" size={16} color={colors.teal} />
-              </View>
-              <View style={styles.detailTextGroup}>
-                <Text style={styles.detailLabel}>Hosted by</Text>
-                <Text style={styles.detailValue}>{hostName}</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.detailRow}>
-              <View style={[styles.iconCircle, { backgroundColor: `${colors.green}14` }]}>
-                <Ionicons name="cash-outline" size={16} color={colors.green} />
-              </View>
+              <Ionicons name="cash-outline" size={23} color={colors.green} />
               <View style={styles.detailTextGroup}>
                 <Text style={styles.detailLabel}>Price</Text>
                 <Text style={[styles.detailValue, { color: colors.green }]}>
@@ -235,28 +208,48 @@ export default function EventDetailScreen() {
                 </Text>
               </View>
             </View>
+
+            {event.description ? (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.descriptionInner}>
+                  <View style={styles.descriptionTitleRow}>
+                    <Ionicons name="information-circle-outline" size={21} color={colors.cyan} />
+                    <Text style={styles.descriptionTitle}>About this event</Text>
+                  </View>
+                  <Text
+                    style={styles.descriptionText}
+                    numberOfLines={descriptionExpanded ? undefined : 4}
+                  >
+                    {event.description}
+                  </Text>
+                  <Pressable onPress={() => setDescriptionExpanded((v) => !v)}>
+                    <Text style={styles.viewMoreText}>
+                      {descriptionExpanded ? 'View less' : 'View more'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
           </View>
 
-          {/* Description card */}
-          {event.description ? (
-            <View style={styles.descriptionCard}>
-              <Text style={styles.descriptionTitle}>Description</Text>
-              <Text
-                style={styles.descriptionText}
-                numberOfLines={descriptionExpanded ? undefined : 4}
-              >
-                {event.description}
+          {/* Host card */}
+          <View style={styles.hostCard}>
+            <View style={styles.hostAvatar}>
+              <Text style={styles.hostAvatarText}>
+                {event.profiles
+                  ? `${event.profiles.first_name[0]}${event.profiles.last_name[0]}`
+                  : '?'}
               </Text>
-              <Pressable onPress={() => setDescriptionExpanded((v) => !v)}>
-                <Text style={styles.viewMoreText}>
-                  {descriptionExpanded ? 'View less' : 'View more'}
-                </Text>
-              </Pressable>
             </View>
-          ) : null}
+            <View style={styles.detailTextGroup}>
+              <Text style={styles.detailLabel}>Hosted by</Text>
+              <Text style={styles.hostName}>{hostName}</Text>
+            </View>
+          </View>
 
-          {/* Capacity card */}
-          <View style={styles.capacityCard}>
+          {/* Capacity + Participants card */}
+          <View style={styles.participantsCard}>
             <View style={styles.capacityHeader}>
               <Ionicons name="people-outline" size={16} color={colors.teal} />
               <Text style={styles.capacityTitle}>
@@ -282,10 +275,7 @@ export default function EventDetailScreen() {
                 ]}
               />
             </View>
-          </View>
-
-          {/* Participants */}
-          <View style={styles.participantsWrapper}>
+            <View style={styles.capacityDivider} />
             <ParticipantList
               participants={event.participants}
               maxParticipants={event.max_participants}
@@ -405,29 +395,25 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 24,
   },
 
-  // -- Description card --
-  descriptionCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 18,
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: `${colors.teal}18`,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+  // -- Description (inline in details card) --
+  descriptionInner: {
+    paddingVertical: 13,
+    marginTop: 15,
+  },
+  descriptionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
   },
   descriptionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.teal,
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textLight,
   },
   descriptionText: {
     fontSize: 15,
@@ -438,19 +424,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textLight,
-    marginTop: 8,
+    marginTop: 10,
+  },
+
+  // -- Host card --
+  hostCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 22,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: `${colors.teal}0D`,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  hostAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.darkCyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hostAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  hostName: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: colors.gray[700],
   },
 
   // -- Details card --
   detailsCard: {
     backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 18,
-    borderWidth: 1.5,
-    borderColor: `${colors.teal}18`,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: `${colors.teal}0D`,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -458,14 +480,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    paddingVertical: 10,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 13,
   },
   detailTextGroup: {
     flex: 1,
@@ -478,30 +493,40 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '500',
+    color: colors.gray[700],
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: `${colors.border}99`,
     marginLeft: 54,
-    marginVertical: 2,
+    marginVertical: 0,
   },
 
-  // -- Capacity card --
-  capacityCard: {
-    backgroundColor: `${colors.teal}0A`,
+  // -- Capacity + Participants card --
+  participantsCard: {
+    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 14,
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: `${colors.teal}18`,
+    padding: 18,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: `${colors.teal}0D`,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   capacityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  capacityDivider: {
+    height: 1,
+    backgroundColor: `${colors.border}99`,
+    marginVertical: 18,
   },
   capacityTitle: {
     fontSize: 14,
@@ -532,15 +557,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.darkCyan,
   },
 
-  // -- Participants wrapper --
-  participantsWrapper: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: `${colors.teal}18`,
-  },
 
   // -- Sticky CTA bar --
   stickyBar: {
@@ -562,16 +578,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
-  hostBtn: {
-    backgroundColor: colors.gray[100],
+  editEventBtn: {
+    backgroundColor: colors.darkCyan,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
-  hostBtnText: {
+  editEventBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.gray[500],
+    color: colors.white,
   },
   leaveBtn: {
     borderRadius: 12,

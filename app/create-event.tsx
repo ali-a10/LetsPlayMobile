@@ -9,7 +9,7 @@ import {
   Switch,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +26,7 @@ import { friendlyErrorMessage } from '../lib/utils/errors';
 /** Screen for creating a new sports event. */
 export default function CreateEventScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   // Synchronous guard to prevent double submission
@@ -225,31 +226,30 @@ export default function CreateEventScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Fixed back button header */}
-      <View style={styles.topBar}>
+    <View style={styles.container}>
+      {/* Teal header */}
+      <View style={[styles.headerBg, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityLabel="Go back"
           accessibilityRole="button"
+          style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.white} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Create Event</Text>
+        <Text style={styles.headerSubtitle}>Set up a new game or activity</Text>
       </View>
 
-    <KeyboardAwareScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-      enableOnAndroid
-      extraScrollHeight={20}
-    >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Event</Text>
-          <Text style={styles.subtitle}>Set up a new game or activity</Text>
-        </View>
-
+      <KeyboardAwareScrollView
+        style={styles.formArea}
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={20}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.form}>
           <Input
             label="Title"
@@ -412,44 +412,51 @@ export default function CreateEventScreen() {
             style={styles.submitButton}
           />
         </View>
-    </KeyboardAwareScrollView>
-    </SafeAreaView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-  },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary,
   },
-  scrollContent: {
-    flexGrow: 1,
+
+  // Header
+  headerBg: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  backButton: {
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: colors.white,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.white,
+    opacity: 0.8,
+    marginTop: 2,
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+
+  // Form area
+  formArea: {
+    flex: 1,
+    backgroundColor: colors.gray[50],
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  formContent: {
     padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
+    paddingBottom: 40,
   },
   form: {
     width: '100%',
