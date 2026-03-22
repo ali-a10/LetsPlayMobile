@@ -32,12 +32,15 @@ export default function CreateEventScreen() {
   // Synchronous guard to prevent double submission
   const submittingRef = useRef(false);
 
+  // Guard against the spurious onChange fired when the iOS spinner unmounts
+  const pickerAccepting = useRef(false);
+
   // Form state
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState<string | null>(null);
   const [date, setDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [time, setTime] = useState<Date | null>(null);
+  const [activePicker, setActivePicker] = useState<'date' | 'time' | null>(null);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('10');
@@ -93,42 +96,38 @@ export default function CreateEventScreen() {
     }
   }
 
-  /** Formats a Date for user-friendly display. */
-  function formatDisplayDateTime(d: Date): string {
-    return d.toLocaleString('en-US', {
+  /** Formats a Date as a human-readable date string. */
+  function formatDisplayDate(d: Date): string {
+    return d.toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    });
+  }
+
+  /** Formats a Date as a human-readable time string. */
+  function formatDisplayTime(d: Date): string {
+    return d.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     });
   }
 
-  /** Handles the date portion selection from the native picker. */
+  /** Handles the date selection from the native date picker. */
   function handleDateChange(_event: any, selectedDate?: Date) {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const existing = date || new Date();
-      selectedDate.setHours(existing.getHours(), existing.getMinutes());
-      setDate(selectedDate);
-      if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
-
-      // On Android, chain to the time picker after date selection
-      if (Platform.OS === 'android') {
-        setTimeout(() => setShowTimePicker(true), 300);
-      }
-    }
+    if (Platform.OS === 'android') setActivePicker(null);
+    if (!pickerAccepting.current || !selectedDate) return;
+    setDate(selectedDate);
+    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
   }
 
-  /** Handles the time portion selection from the native picker. */
+  /** Handles the time selection from the native time picker. */
   function handleTimeChange(_event: any, selectedTime?: Date) {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedTime && date) {
-      const updated = new Date(date);
-      updated.setHours(selectedTime.getHours(), selectedTime.getMinutes());
-      setDate(updated);
-    }
+    if (Platform.OS === 'android') setActivePicker(null);
+    if (!pickerAccepting.current || !selectedTime) return;
+    setTime(selectedTime);
+    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
   }
 
   /** Validates all required fields and sets error messages. */
@@ -143,10 +142,14 @@ export default function CreateEventScreen() {
       newErrors.sport = 'Please select a sport';
     }
 
-    if (!date) {
+    if (!date || !time) {
       newErrors.date = 'Date and time are required';
-    } else if (date <= new Date()) {
-      newErrors.date = 'Event must be in the future';
+    } else {
+      const combined = new Date(date);
+      combined.setHours(time.getHours(), time.getMinutes(), 0, 0);
+      if (combined <= new Date()) {
+        newErrors.date = 'Event must be in the future';
+      }
     }
 
     if (!location.trim()) {
@@ -187,12 +190,14 @@ export default function CreateEventScreen() {
 
     try {
       // Host is automatically enrolled as a participant via the auto_enroll_host_on_event_create trigger
+      const combined = new Date(date!);
+      combined.setHours(time!.getHours(), time!.getMinutes(), 0, 0);
       const { error } = await supabase.from('events').insert([
         {
           host_id: user.id,
           title: title.trim(),
           sport: sport!,
-          date: date!.toISOString(),
+          date: combined.toISOString(),
           location: location.trim(),
           description: description.trim() || null,
           max_participants: parseInt(maxParticipants, 10) || 10,
@@ -208,6 +213,7 @@ export default function CreateEventScreen() {
         setTitle('');
         setSport(null);
         setDate(null);
+        setTime(null);
         setLocation('');
         setDescription('');
         setMaxParticipants('10');
@@ -275,9 +281,9 @@ export default function CreateEventScreen() {
             error={errors.sport}
           />
 
-          {/* Date & Time picker */}
+          {/* Date & Time pickers */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Date & Time</Text>
+            <Text style={styles.label}>Date</Text>
             <TouchableOpacity
               style={[
                 styles.dateButton,
@@ -285,7 +291,8 @@ export default function CreateEventScreen() {
               ]}
               onPress={() => {
                 Keyboard.dismiss();
-                setShowDatePicker(true);
+                pickerAccepting.current = true;
+                setActivePicker('date');
               }}
             >
               <Text
@@ -294,15 +301,12 @@ export default function CreateEventScreen() {
                   !date && styles.dateButtonPlaceholder,
                 ]}
               >
-                {date ? formatDisplayDateTime(date) : 'Select date and time'}
+                {date ? formatDisplayDate(date) : 'Select date'}
               </Text>
             </TouchableOpacity>
-            {errors.date && (
-              <Text style={styles.errorText}>{errors.date}</Text>
-            )}
           </View>
 
-          {showDatePicker && (
+          {activePicker === 'date' && (
             <DateTimePicker
               value={date || new Date()}
               mode="date"
@@ -312,35 +316,51 @@ export default function CreateEventScreen() {
             />
           )}
 
-          {showTimePicker && (
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Time</Text>
+            <TouchableOpacity
+              style={[
+                styles.dateButton,
+                errors.date && styles.dateButtonError,
+              ]}
+              onPress={() => {
+                Keyboard.dismiss();
+                pickerAccepting.current = true;
+                setActivePicker('time');
+              }}
+            >
+              <Text
+                style={[
+                  styles.dateButtonText,
+                  !time && styles.dateButtonPlaceholder,
+                ]}
+              >
+                {time ? formatDisplayTime(time) : 'Select time'}
+              </Text>
+            </TouchableOpacity>
+            {errors.date && (
+              <Text style={styles.errorText}>{errors.date}</Text>
+            )}
+          </View>
+
+          {activePicker === 'time' && (
             <DateTimePicker
-              value={date || new Date()}
+              value={time || new Date()}
               mode="time"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleTimeChange}
             />
           )}
 
-          {/* iOS picker dismiss buttons */}
-          {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
+          {/* iOS Done button — shown below whichever picker is active */}
+          {Platform.OS === 'ios' && activePicker !== null && (
             <View style={styles.pickerActions}>
-              {showDatePicker && (
-                <Button
-                  title="Pick Time"
-                  variant="outline"
-                  onPress={() => {
-                    setShowDatePicker(false);
-                    setShowTimePicker(true);
-                  }}
-                  style={styles.pickerButton}
-                />
-              )}
               <Button
                 title="Done"
                 variant="outline"
                 onPress={() => {
-                  setShowDatePicker(false);
-                  setShowTimePicker(false);
+                  pickerAccepting.current = false;
+                  setActivePicker(null);
                 }}
                 style={styles.pickerButton}
               />
