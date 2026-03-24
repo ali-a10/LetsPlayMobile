@@ -42,3 +42,18 @@ Improvements / Follow-up Tasks
    Unlike useEventDetail which has `enabled: !!eventId`, the mutation has no protection
    against being called with an empty string. Add a guard at the top of mutationFn:
    `if (!eventId) throw new Error('No event ID provided.');`
+
+8. Reset password deep link flow must be tested on a real device before launch (app/_layout.tsx)
+   The reset password feature was built but could not be fully tested because Expo Go does
+   not support custom URL schemes (letsplay://). The code correctly parses the hash fragment
+   from the deep link and calls setSession, but the exact token format Supabase sends has
+   not been confirmed against this specific project's configuration.
+
+   How to test:
+   1. Run `npx expo install expo-dev-client` then `npx expo run:ios` to create a dev build
+   2. Install the built app on a real device
+   3. Trigger a password reset email from the login screen
+   4. Tap the link in the email — the app should open on the "Set new password" screen
+   5. Enter a new password and confirm it saves successfully
+   6. Also test: tap an expired link (wait 1+ hour) — should show the "link expired" error
+      with a "Request a new link" button
