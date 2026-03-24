@@ -108,16 +108,10 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <MenuItem icon="create-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
+        <MenuItem icon="calendar-outline" label="My Events" />
         <MenuItem icon="mail-outline" label="Email Preferences" />
         <MenuItem icon="settings-outline" label="Settings" />
         <MenuItem icon="shield-checkmark-outline" label="Privacy Policy" />
-      </View>
-
-      {/* Activity Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Activity</Text>
-        <MenuItem icon="calendar-outline" label="My Events" />
-        <MenuItem icon="trophy-outline" label="Favorite Sports" />
       </View>
 
       {/* Social Section */}
