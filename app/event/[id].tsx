@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -235,13 +235,17 @@ export default function EventDetailScreen() {
 
           {/* Host card */}
           <View style={styles.hostCard}>
-            <View style={styles.hostAvatar}>
-              <Text style={styles.hostAvatarText}>
-                {event.profiles
-                  ? `${event.profiles.first_name[0]}${event.profiles.last_name[0]}`
-                  : '?'}
-              </Text>
-            </View>
+            {event.profiles?.avatar_url ? (
+              <Image source={{ uri: event.profiles.avatar_url }} style={styles.hostAvatarImage} />
+            ) : (
+              <View style={styles.hostAvatar}>
+                <Text style={styles.hostAvatarText}>
+                  {event.profiles
+                    ? `${event.profiles.first_name[0]}${event.profiles.last_name[0]}`
+                    : '?'}
+                </Text>
+              </View>
+            )}
             <View style={styles.detailTextGroup}>
               <Text style={styles.detailLabel}>Hosted by</Text>
               <Text style={styles.hostName}>{hostName}</Text>
@@ -443,6 +447,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
+  },
+  hostAvatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   hostAvatar: {
     width: 44,

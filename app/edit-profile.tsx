@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -16,6 +17,8 @@ import { Button } from '../components/ui/Button';
 import { colors } from '../lib/constants/colors';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/hooks/useAuth';
+import { useProfile, useInvalidateProfile } from '../lib/hooks/useProfile';
+import { pickAndUploadAvatar } from '../lib/utils/uploadAvatar';
 import { SPORT_OPTIONS } from '../lib/constants/sports';
 
 /** Screen for editing the current user's profile information. */
@@ -24,9 +27,17 @@ export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const [loading, setLoading] = useState(true);
+  const { data: profileData, isLoading: loading, error: profileError } = useProfile(user?.id);
+  const invalidateProfile = useInvalidateProfile();
+
   const [saving, setSaving] = useState(false);
   const submittingRef = useRef(false);
+  const [formReady, setFormReady] = useState(false);
+
+  // Avatar state
+  const [pendingAvatarUrl, setPendingAvatarUrl] = useState<string | null>(null);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -42,33 +53,26 @@ export default function EditProfileScreen() {
     phone?: string;
   }>({});
 
-  /** Fetches the current user's profile and pre-fills form fields. */
+  /** Populates form fields when profile data loads from the useProfile hook. */
   useEffect(() => {
-    if (!user) return;
+    if (!profileData || formReady) return;
 
-    async function fetchProfile() {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user!.id)
-        .single();
+    setFirstName(profileData.first_name);
+    setLastName(profileData.last_name);
+    setPhone(profileData.phone);
+    setFavouriteSports(profileData.favourite_sports ?? []);
+    setAboutMe(profileData.about_me ?? '');
+    setCurrentAvatarUrl(profileData.avatar_url);
+    setFormReady(true);
+  }, [profileData, formReady]);
 
-      if (error) {
-        Alert.alert('Error', 'Could not load your profile.');
-        router.back();
-        return;
-      }
-
-      setFirstName(data.first_name);
-      setLastName(data.last_name);
-      setPhone(data.phone);
-      setFavouriteSports(data.favourite_sports ?? []);
-      setAboutMe(data.about_me ?? '');
-      setLoading(false);
+  /** Navigates back if the profile query fails. */
+  useEffect(() => {
+    if (profileError) {
+      Alert.alert('Error', 'Could not load your profile.');
+      router.back();
     }
-
-    fetchProfile();
-  }, [user]);
+  }, [profileError]);
 
   /** Returns the user's initials from current form values. */
   function getInitials(): string {
@@ -102,6 +106,17 @@ export default function EditProfileScreen() {
     return Object.keys(newErrors).length === 0;
   }
 
+  /** Opens the image picker, uploads immediately, and stores the URL for save. */
+  async function handlePickAvatar() {
+    if (!user) return;
+    setUploadingAvatar(true);
+    const result = await pickAndUploadAvatar(user.id);
+    setUploadingAvatar(false);
+    if ('cancelled' in result && result.cancelled) return;
+    if (!result.success) { Alert.alert('Error', result.error); return; }
+    setPendingAvatarUrl(result.publicUrl);
+  }
+
   /** Validates, saves the profile update to Supabase, and navigates back on success. */
   async function handleSave() {
     if (submittingRef.current) return;
@@ -119,6 +134,7 @@ export default function EditProfileScreen() {
         phone: phone.trim(),
         favourite_sports: favouriteSports.length > 0 ? favouriteSports : null,
         about_me: aboutMe.trim() || null,
+        avatar_url: pendingAvatarUrl ?? currentAvatarUrl,
       })
       .eq('id', user.id);
 
@@ -128,6 +144,7 @@ export default function EditProfileScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
+      invalidateProfile(user.id);
       Alert.alert('Success', 'Your profile has been updated!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -135,7 +152,7 @@ export default function EditProfileScreen() {
   }
 
   // Loading state
-  if (loading) {
+  if (loading || !formReady) {
     return (
       <View style={styles.container}>
         <View style={[styles.headerBg, { paddingTop: insets.top + 12 }]}>
@@ -178,9 +195,28 @@ export default function EditProfileScreen() {
 
         {/* Avatar */}
         <View style={styles.avatarRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials()}</Text>
-          </View>
+          <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarWrapper}>
+            {pendingAvatarUrl || currentAvatarUrl ? (
+              <View>
+                <Image source={{ uri: pendingAvatarUrl ?? currentAvatarUrl! }} style={styles.avatarImage} />
+                {uploadingAvatar && (
+                  <View style={styles.avatarOverlay}>
+                    <ActivityIndicator size="small" color={colors.white} />
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={styles.avatar}>
+                {uploadingAvatar
+                  ? <ActivityIndicator size="small" color={colors.white} />
+                  : <Text style={styles.avatarText}>{getInitials()}</Text>
+                }
+              </View>
+            )}
+            <View style={styles.cameraBadge}>
+              <Ionicons name="camera" size={14} color={colors.white} />
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -307,6 +343,25 @@ const styles = StyleSheet.create({
   avatarRow: {
     alignItems: 'center',
   },
+  avatarWrapper: {
+    position: 'relative',
+    width: 72,
+    height: 72,
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatar: {
     width: 72,
     height: 72,
@@ -319,6 +374,19 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     color: colors.white,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.darkCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
   },
 
   // Form

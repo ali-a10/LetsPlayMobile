@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
 import { EventWithHost } from '../../lib/hooks/useEvents';
@@ -63,7 +63,15 @@ export function EventCard({ event, onPress }: EventCardProps) {
             </Text>
           </View>
           <View style={styles.hostRow}>
-            <View style={styles.avatarCircle} />
+            {event.profiles?.avatar_url ? (
+              <Image source={{ uri: event.profiles.avatar_url }} style={styles.avatarCircle} />
+            ) : (
+              <View style={[styles.avatarCircle, styles.avatarFallback]}>
+                <Text style={styles.avatarInitial}>
+                  {(event.profiles?.first_name?.[0] ?? '').toUpperCase()}
+                </Text>
+              </View>
+            )}
             <Text style={styles.hostName} numberOfLines={1}>{hostFirstName}</Text>
           </View>
         </View>
@@ -183,6 +191,16 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     backgroundColor: colors.white,
+  },
+  avatarFallback: {
+    backgroundColor: colors.darkCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
   },
   hostName: {
     fontSize: 13,

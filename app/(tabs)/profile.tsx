@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useCallback, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,7 +13,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { Profile } from '../../lib/types/database';
+import { useProfile } from '../../lib/hooks/useProfile';
 import { colors } from '../../lib/constants/colors';
 
 /** Displays the user's profile with stats, account settings, and activity links. */
@@ -20,18 +21,17 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
   const [stats, setStats] = useState({ joined: 0, hosted: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  /** Fetches the user's profile and computed stats from Supabase. */
+  /** Fetches the user's computed stats from Supabase. */
   useFocusEffect(
     useCallback(() => {
       if (!user) return;
 
-      const fetchData = async () => {
-        const [profileRes, joinedRes, hostedRes] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', user.id).single(),
+      const fetchStats = async () => {
+        const [joinedRes, hostedRes] = await Promise.all([
           supabase
             .from('participants')
             .select('event_id', { count: 'exact', head: true })
@@ -42,19 +42,18 @@ export default function ProfileScreen() {
             .eq('host_id', user.id),
         ]);
 
-        if (profileRes.data) setProfile(profileRes.data);
         setStats({
           joined: joinedRes.count ?? 0,
           hosted: hostedRes.count ?? 0,
         });
-        setLoading(false);
+        setStatsLoading(false);
       };
 
-      fetchData();
+      fetchStats();
     }, [user])
   );
 
-  if (loading) {
+  if (profileLoading || statsLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -74,15 +73,19 @@ export default function ProfileScreen() {
       {/* Teal background that extends behind status bar */}
       <View style={[styles.headerBg, { paddingTop: insets.top + 20 }]}>
         <View style={styles.headerContent}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials()}</Text>
-          </View>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{getInitials()}</Text>
+            </View>
+          )}
           <View style={styles.headerInfo}>
             <Text style={styles.name}>
               {profile?.first_name} {profile?.last_name}
             </Text>
           </View>
-          <Ionicons name="settings-outline" size={22} color={colors.white} />
+          <View style={{ width: 22 }} />
         </View>
 
         {/* Stats Row */}
@@ -174,6 +177,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 14,
   },
   avatar: {
     width: 64,

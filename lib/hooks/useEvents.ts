@@ -4,7 +4,7 @@ import { Event } from '../types/database';
 
 /** Event row joined with the host's profile data. */
 export type EventWithHost = Event & {
-  profiles: { first_name: string; last_name: string } | null;
+  profiles: { first_name: string; last_name: string; avatar_url: string | null } | null;
 };
 
 /** Fetches all upcoming events excluding the current user's own events, ordered by date ascending. */
@@ -16,7 +16,7 @@ export function useEvents() {
 
       let query = supabase
         .from('events')
-        .select('*, profiles!host_id(first_name, last_name)')
+        .select('*, profiles!host_id(first_name, last_name, avatar_url)')
         .gte('date', new Date().toISOString())
         .order('date', { ascending: true });
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/constants/colors';
 import { ParticipantWithProfile } from '../../lib/hooks/useEventDetail';
@@ -44,7 +44,11 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
               const isHost = p.user_id === hostId;
               return (
                 <View key={p.user_id} style={styles.row}>
-                  <View style={[styles.avatar, { backgroundColor: avatarColor }]} />
+                  {p.profiles?.avatar_url ? (
+                    <Image source={{ uri: p.profiles.avatar_url }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={[styles.avatar, { backgroundColor: avatarColor }]} />
+                  )}
                   <Text style={styles.name}>{firstName} {lastName}</Text>
                   {isHost && (
                     <View style={styles.hostBadge}>
@@ -84,6 +88,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarImage: {
     width: 36,
     height: 36,
     borderRadius: 18,

@@ -5,11 +5,11 @@ import { Event } from '../types/database';
 
 export type ParticipantWithProfile = {
   user_id: string;
-  profiles: { first_name: string; last_name: string } | null;
+  profiles: { first_name: string; last_name: string; avatar_url: string | null } | null;
 };
 
 export type EventDetail = Event & {
-  profiles: { first_name: string; last_name: string } | null;
+  profiles: { first_name: string; last_name: string; avatar_url: string | null } | null;
   participants: ParticipantWithProfile[];
   isUserHost: boolean;
   isUserJoined: boolean;
@@ -27,10 +27,10 @@ export function useEventDetail(eventId: string) {
         .from('events')
         .select(`
           *,
-          profiles!host_id(first_name, last_name),
+          profiles!host_id(first_name, last_name, avatar_url),
           participants(
             user_id,
-            profiles!user_id(first_name, last_name)
+            profiles!user_id(first_name, last_name, avatar_url)
           )
         `)
         .eq('id', eventId)
