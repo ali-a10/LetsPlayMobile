@@ -9,7 +9,7 @@ export function useMyHostedEvents(userId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('*, profiles!host_id(first_name, last_name)')
+        .select('*, profiles!host_id(first_name, last_name, avatar_url)')
         .eq('host_id', userId!)
         .gte('date', new Date().toISOString())
         .order('date', { ascending: true });

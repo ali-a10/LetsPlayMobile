@@ -9,7 +9,7 @@ export function useMyJoinedEvents(userId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('*, profiles!host_id(first_name, last_name), participants!inner(user_id)')
+        .select('*, profiles!host_id(first_name, last_name, avatar_url), participants!inner(user_id)')
         .eq('participants.user_id', userId!)
         .neq('host_id', userId!)
         .gte('date', new Date().toISOString())
