@@ -158,7 +158,7 @@ export default function MyEventsScreen() {
               refetchHosted,
               hostedEvents,
               "You're not hosting any upcoming events.",
-              <Pressable style={styles.ctaButton} onPress={() => router.push('/(tabs)/create')}>
+              <Pressable style={styles.ctaButton} onPress={() => router.push('/create-event')}>
                 <Text style={styles.ctaText}>Create an Event</Text>
               </Pressable>
             )}
