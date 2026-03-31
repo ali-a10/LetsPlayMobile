@@ -10,7 +10,13 @@ export function getSportColor(sport: string): string {
     case 'tennis':     return '#a3cb04ff';
     case 'volleyball': return '#DC2626';
     case 'running':    return '#7C3AED';
-    case 'golf':       return '#15803D';
+    case 'golf':         return '#15803D';
+    case 'hockey':       return '#64748B';
+    case 'padel':        return '#0EA5E9';
+    case 'pickleball':   return '#F97316';
+    case 'football':     return '#92400E';
+    case 'baseball':     return '#B45309';
+    case 'table_tennis': return '#6366F1';
     default:           return colors.primary;
   }
 }
@@ -24,7 +30,13 @@ export function getSportLabel(sport: string): string {
     case 'tennis':     return 'Tennis';
     case 'volleyball': return 'Volleyball';
     case 'running':    return 'Running';
-    case 'golf':       return 'Golf';
+    case 'golf':         return 'Golf';
+    case 'hockey':       return 'Hockey';
+    case 'padel':        return 'Padel';
+    case 'pickleball':   return 'Pickleball';
+    case 'football':     return 'Football';
+    case 'baseball':     return 'Baseball';
+    case 'table_tennis': return 'Table Tennis';
     default:           return sport ?? 'Sport';
   }
 }
@@ -38,7 +50,13 @@ export function getSportIcon(sport: string): keyof typeof Ionicons.glyphMap {
     case 'tennis':     return 'tennisball-outline';
     case 'volleyball': return 'ellipse-outline';
     case 'running':    return 'body-outline';
-    case 'golf':       return 'flag-outline';
+    case 'golf':         return 'flag-outline';
+    case 'hockey':       return 'triangle-outline';
+    case 'padel':        return 'tennisball-outline';
+    case 'pickleball':   return 'tennisball-outline';
+    case 'football':     return 'american-football-outline';
+    case 'baseball':     return 'baseball-outline';
+    case 'table_tennis': return 'ellipse-outline';
     default:           return 'trophy-outline';
   }
 }
