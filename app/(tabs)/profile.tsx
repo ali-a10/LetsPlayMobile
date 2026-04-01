@@ -138,18 +138,25 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.error} />
         </TouchableOpacity>
       </View>
+
+      {/* Danger Zone */}
+      <View style={styles.section}>
+        <MenuItem icon="trash-outline" label="Delete Account" onPress={() => router.push('/delete-account')} danger />
+      </View>
       </ScrollView>
     </View>
   );
 }
 
-/** Renders a single menu row with an icon, label, and chevron. */
-function MenuItem({ icon, label, onPress }: { icon: string; label: string; onPress?: () => void }) {
+/** Renders a single menu row with an icon, label, and chevron. Pass danger=true for destructive actions. */
+function MenuItem({ icon, label, onPress, danger }: { icon: string; label: string; onPress?: () => void; danger?: boolean }) {
+  const color = danger ? colors.error : colors.gray[500];
+  const chevronColor = danger ? colors.error : colors.gray[400];
   return (
     <TouchableOpacity style={styles.menuItem} activeOpacity={0.6} onPress={onPress}>
-      <Ionicons name={icon as any} size={22} color={colors.gray[500]} />
-      <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} />
+      <Ionicons name={icon as any} size={22} color={color} />
+      <Text style={[styles.menuLabel, danger && { color: colors.error }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={chevronColor} />
     </TouchableOpacity>
   );
 }
