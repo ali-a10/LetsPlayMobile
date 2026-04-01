@@ -43,6 +43,16 @@ Improvements / Follow-up Tasks
    against being called with an empty string. Add a guard at the top of mutationFn:
    `if (!eventId) throw new Error('No event ID provided.');`
 
+9. Web-based account deletion resource (Google Play requirement)
+   Google Play requires a URL where users can request account deletion even after
+   uninstalling the app. Implement a Supabase Edge Function `delete-account-web` that:
+   - Serves an HTML form on GET (email input + submit button)
+   - On POST, saves the request to a `deletion_requests` table (id, email, requested_at)
+   - Shows a confirmation message after submission
+   Enter the deployed URL in Play Console under "Data safety → Account deletion → Web link".
+   The URL format will be: https://<project-ref>.supabase.co/functions/v1/delete-account-web
+   Also requires creating the `deletion_requests` table via a Supabase migration.
+
 8. Reset password deep link flow must be tested on a real device before launch (app/_layout.tsx)
    The reset password feature was built but could not be fully tested because Expo Go does
    not support custom URL schemes (letsplay://). The code correctly parses the hash fragment
