@@ -6,7 +6,9 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors } from '../../lib/constants/colors';
+import { useMemo } from 'react';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors } from '../../lib/constants/colors';
 
 interface ButtonProps {
   title: string;
@@ -27,6 +29,8 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isDisabled = disabled || loading;
 
   return (
@@ -43,7 +47,7 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? colors.primary : colors.white}
+          color={variant === 'outline' ? colors.buttonOutlineText : colors.buttonPrimaryText}
         />
       ) : (
         <Text
@@ -60,39 +64,41 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.secondary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: colors.white,
-  },
-  secondaryText: {
-    color: colors.teal,
-  },
-  outlineText: {
-    color: colors.primary,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    button: {
+      height: 50,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    primary: {
+      backgroundColor: colors.buttonPrimaryBg,
+    },
+    secondary: {
+      backgroundColor: colors.buttonSecondaryBg,
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: colors.buttonOutlineBorder,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    text: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    primaryText: {
+      color: colors.buttonPrimaryText,
+    },
+    secondaryText: {
+      color: colors.buttonSecondaryText,
+    },
+    outlineText: {
+      color: colors.buttonOutlineText,
+    },
+  });
+}

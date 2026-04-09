@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../constants/colors';
 
-/** Returns a sport-specific accent color. */
+/** Returns a sport-specific accent color (theme-invariant). */
 export function getSportColor(sport: string): string {
   switch (sport?.toLowerCase()) {
     case 'basketball': return '#F59E0B';
@@ -17,7 +16,7 @@ export function getSportColor(sport: string): string {
     case 'football':     return '#92400E';
     case 'baseball':     return '#B45309';
     case 'table_tennis': return '#6366F1';
-    default:           return colors.primary;
+    default:           return '#0D5C63';
   }
 }
 

@@ -1,9 +1,16 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking } from 'react-native';
+import { Linking, StatusBar } from 'react-native';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 import { useAuth } from '../lib/hooks/useAuth';
+import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { supabase } from '../lib/supabase';
+
+/** Provides a theme-aware StatusBar that updates when the user toggles dark mode. */
+function ThemedStatusBar() {
+  const colors = useThemeColors();
+  return <StatusBar barStyle={colors.statusBarStyle} />;
+}
 
 function AuthGate() {
   const { session, loading } = useAuth();
@@ -81,6 +88,7 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <QueryProvider>
+      <ThemedStatusBar />
       <AuthGate />
     </QueryProvider>
   );

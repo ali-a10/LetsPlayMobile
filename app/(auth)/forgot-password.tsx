@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 
 /** Sends a password reset email to the user with a deep link back to the app. */
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -121,62 +124,64 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textLight,
-    lineHeight: 22,
-  },
-  form: {
-    width: '100%',
-  },
-  button: {
-    marginTop: 8,
-  },
-  successBox: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  successText: {
-    fontSize: 15,
-    color: colors.textLight,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  backButton: {
-    marginTop: 8,
-    width: '100%',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 24,
+    },
+    header: {
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: colors.textMuted,
+      lineHeight: 22,
+    },
+    form: {
+      width: '100%',
+    },
+    button: {
+      marginTop: 8,
+    },
+    successBox: {
+      alignItems: 'center',
+      gap: 12,
+    },
+    successTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    successText: {
+      fontSize: 15,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    backButton: {
+      marginTop: 8,
+      width: '100%',
+    },
+  });
+}

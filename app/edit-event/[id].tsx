@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors } from '../../lib/constants/colors';
 import { useEventDetail } from '../../lib/hooks/useEventDetail';
 import { useUpdateEvent, UpdateEventPayload } from '../../lib/hooks/useUpdateEvent';
 import { getSportLabel } from '../../lib/utils/sports';
@@ -27,6 +28,8 @@ export default function EditEventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: event, isLoading: eventLoading } = useEventDetail(id!);
   const updateMutation = useUpdateEvent(id!);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Tracks whether form has been initialized from event data
   const [initialized, setInitialized] = useState(false);
@@ -225,7 +228,7 @@ export default function EditEventScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.header} />
         </View>
       </SafeAreaView>
     );
@@ -410,111 +413,114 @@ export default function EditEventScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-  },
-  fieldContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  readOnlyField: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
-    backgroundColor: colors.gray[50],
-  },
-  readOnlyText: {
-    fontSize: 16,
-    color: colors.textLight,
-  },
-  dateButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
-    backgroundColor: colors.background,
-  },
-  dateButtonError: {
-    borderColor: colors.error,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  dateButtonPlaceholder: {
-    color: colors.textLight,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 4,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  pickerActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginBottom: 16,
-  },
-  pickerButton: {
-    height: 36,
-    paddingHorizontal: 16,
-  },
-  hintText: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginTop: -12,
-  },
-  submitButton: {
-    marginTop: 24,
-    marginBottom: 40,
-  },
-});
+/** Creates theme-aware styles for the EditEvent screen. */
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      padding: 24,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    form: {
+      width: '100%',
+    },
+    fieldContainer: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    readOnlyField: {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      padding: 14,
+      backgroundColor: colors.background,
+    },
+    readOnlyText: {
+      fontSize: 16,
+      color: colors.textMuted,
+    },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      padding: 14,
+      backgroundColor: colors.background,
+    },
+    dateButtonError: {
+      borderColor: colors.error,
+    },
+    dateButtonText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    dateButtonPlaceholder: {
+      color: colors.textMuted,
+    },
+    errorText: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 4,
+    },
+    textArea: {
+      height: 100,
+      textAlignVertical: 'top',
+    },
+    pickerActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 8,
+      marginBottom: 16,
+    },
+    pickerButton: {
+      height: 36,
+      paddingHorizontal: 16,
+    },
+    hintText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: -12,
+    },
+    submitButton: {
+      marginTop: 24,
+      marginBottom: 40,
+    },
+  });
+}

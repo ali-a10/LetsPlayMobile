@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
 import { SPORT_OPTIONS } from '../../lib/constants/sports';
@@ -19,6 +20,8 @@ import { SPORT_OPTIONS } from '../../lib/constants/sports';
 /** Step 3 of signup: collects optional profile details and inserts the profile row. */
 export default function OnboardingProfileScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const store = useOnboardingStore();
   const [favouriteSports, setFavouriteSports] = useState<string[]>(
     store.favouriteSports
@@ -128,54 +131,56 @@ export default function OnboardingProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    paddingTop: 80,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  sportsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 24,
-  },
-  sportButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  button: {
-    marginTop: 24,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      padding: 24,
+      paddingTop: 80,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.sectionTitle,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    form: {
+      width: '100%',
+    },
+    sectionLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    sportsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 24,
+    },
+    sportButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    textArea: {
+      height: 100,
+      textAlignVertical: 'top',
+    },
+    button: {
+      marginTop: 24,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,8 @@ import { useRouter } from 'expo-router';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
 
 const GENDER_OPTIONS = [
@@ -26,6 +27,8 @@ const GENDER_OPTIONS = [
 /** Step 2 of signup: collects phone, date of birth, and gender. */
 export default function OnboardingDetailsScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const store = useOnboardingStore();
   const [phone, setPhone] = useState(store.phone);
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
@@ -167,65 +170,67 @@ export default function OnboardingDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-  },
-  fieldContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  dateButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
-    backgroundColor: colors.background,
-  },
-  dateButtonError: {
-    borderColor: colors.error,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  dateButtonPlaceholder: {
-    color: colors.textLight,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 4,
-  },
-  button: {
-    marginTop: 16,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 24,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.sectionTitle,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    form: {
+      width: '100%',
+    },
+    fieldContainer: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      padding: 14,
+      backgroundColor: colors.background,
+    },
+    dateButtonError: {
+      borderColor: colors.error,
+    },
+    dateButtonText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    dateButtonPlaceholder: {
+      color: colors.textMuted,
+    },
+    errorText: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 4,
+    },
+    button: {
+      marginTop: 16,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   FlatList,
   Keyboard,
 } from 'react-native';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors } from '../../lib/constants/colors';
 
 interface SelectOption {
   label: string;
@@ -33,6 +34,8 @@ export function Select({
   error,
 }: SelectProps) {
   const [modalVisible, setModalVisible] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -98,80 +101,82 @@ export function Select({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  selector: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.white,
-  },
-  selectorError: {
-    borderColor: colors.error,
-  },
-  selectorText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  placeholder: {
-    color: colors.gray[400],
-  },
-  arrow: {
-    fontSize: 12,
-    color: colors.gray[400],
-  },
-  error: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    maxHeight: '60%',
-    overflow: 'hidden',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  option: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  optionSelected: {
-    backgroundColor: colors.gray[50],
-  },
-  optionText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  optionTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    selector: {
+      height: 50,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.inputBg,
+    },
+    selectorError: {
+      borderColor: colors.error,
+    },
+    selectorText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    placeholder: {
+      color: colors.inputPlaceholder,
+    },
+    arrow: {
+      fontSize: 12,
+      color: colors.inputPlaceholder,
+    },
+    error: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      padding: 24,
+    },
+    modalContent: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      maxHeight: '60%',
+      overflow: 'hidden',
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.menuDivider,
+    },
+    option: {
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.menuDivider,
+    },
+    optionSelected: {
+      backgroundColor: colors.chipInactiveBg,
+    },
+    optionText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    optionTextSelected: {
+      color: colors.sectionTitle,
+      fontWeight: '600',
+    },
+  });
+}

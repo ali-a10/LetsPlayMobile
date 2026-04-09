@@ -1,20 +1,7 @@
 import { Modal, View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
-import { colors } from '../../lib/constants/colors';
-
-const MODAL_CONFIG = {
-  join: {
-    title: 'Join Event?',
-    body: 'Are you sure you want to join this event?',
-    confirmLabel: 'Confirm',
-    confirmColor: colors.primary,
-  },
-  leave: {
-    title: 'Leave Event?',
-    body: 'Are you sure you want to leave this event?',
-    confirmLabel: 'Leave',
-    confirmColor: colors.error,
-  },
-};
+import { useMemo } from 'react';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 
 interface ConfirmModalProps {
   type: 'join' | 'leave';
@@ -27,7 +14,12 @@ interface ConfirmModalProps {
 
 /** Confirmation modal for joining or leaving an event, with loading and error states. */
 export function ConfirmModal({ type, visible, isPending, error, onConfirm, onCancel }: ConfirmModalProps) {
-  const config = MODAL_CONFIG[type];
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const config = type === 'join'
+    ? { title: 'Join Event?', body: 'Are you sure you want to join this event?', confirmLabel: 'Confirm', confirmColor: colors.header }
+    : { title: 'Leave Event?', body: 'Are you sure you want to leave this event?', confirmLabel: 'Leave', confirmColor: '#E53E3E' };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -48,7 +40,7 @@ export function ConfirmModal({ type, visible, isPending, error, onConfirm, onCan
               disabled={isPending}
             >
               {isPending
-                ? <ActivityIndicator size="small" color={colors.white} />
+                ? <ActivityIndicator size="small" color={sharedColors.white} />
                 : <Text style={styles.confirmText}>{config.confirmLabel}</Text>}
             </Pressable>
           </View>
@@ -58,65 +50,67 @@ export function ConfirmModal({ type, visible, isPending, error, onConfirm, onCan
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    gap: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  body: {
-    fontSize: 15,
-    color: colors.textLight,
-    lineHeight: 22,
-  },
-  error: {
-    fontSize: 13,
-    color: colors.error,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  confirmText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      gap: 12,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    body: {
+      fontSize: 15,
+      color: colors.textMuted,
+      lineHeight: 22,
+    },
+    error: {
+      fontSize: 13,
+      color: colors.error,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 8,
+    },
+    cancelBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      alignItems: 'center',
+    },
+    cancelText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    confirmBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    confirmText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: sharedColors.white,
+    },
+    btnDisabled: {
+      opacity: 0.6,
+    },
+  });
+}

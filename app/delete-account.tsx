@@ -2,9 +2,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '../components/ui/Button';
-import { colors } from '../lib/constants/colors';
+import { useThemeColors } from '../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { supabase } from '../lib/supabase';
 import { friendlyErrorMessage } from '../lib/utils/errors';
 
@@ -22,6 +23,8 @@ const WHAT_GETS_DELETED = [
 export default function DeleteAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +62,7 @@ export default function DeleteAccountScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={26} color={colors.white} />
+          <Ionicons name="chevron-back" size={26} color={sharedColors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Delete Account</Text>
         <View style={{ width: 40 }} />
@@ -117,101 +120,103 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  backBtn: {
-    width: 40,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  content: {
-    backgroundColor: colors.gray[50],
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    flexGrow: 1,
-  },
-  iconWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textLight,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textLight,
-    lineHeight: 20,
-  },
-  legalNote: {
-    fontSize: 12,
-    color: colors.gray[400],
-    lineHeight: 18,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.error,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  deleteBtn: {
-    backgroundColor: colors.error,
-    marginBottom: 16,
-  },
-  cancelLink: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  cancelText: {
-    fontSize: 15,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.header,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    backBtn: {
+      width: 40,
+      alignItems: 'flex-start',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: sharedColors.white,
+    },
+    content: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 24,
+      flexGrow: 1,
+    },
+    iconWrapper: {
+      alignItems: 'center',
+      marginBottom: 16,
+      marginTop: 8,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: 24,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      gap: 12,
+    },
+    cardTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    bulletRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    bulletText: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.textMuted,
+      lineHeight: 20,
+    },
+    legalNote: {
+      fontSize: 12,
+      color: colors.chevron,
+      lineHeight: 18,
+      marginBottom: 24,
+      textAlign: 'center',
+    },
+    errorText: {
+      fontSize: 14,
+      color: colors.error,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    deleteBtn: {
+      backgroundColor: colors.error,
+      marginBottom: 16,
+    },
+    cancelLink: {
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    cancelText: {
+      fontSize: 15,
+      color: colors.sectionTitle,
+      fontWeight: '500',
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
 
 /** Step 1 of signup: collects name, email, password and creates auth user. */
 export default function SignupScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const setName = useOnboardingStore((state) => state.setName);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -187,57 +190,59 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-  },
-  button: {
-    marginTop: 8,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  footerText: {
-    color: colors.textLight,
-    fontSize: 14,
-  },
-  link: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 24,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: colors.sectionTitle,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    form: {
+      width: '100%',
+    },
+    button: {
+      marginTop: 8,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    footerText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    link: {
+      color: colors.accent,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+}

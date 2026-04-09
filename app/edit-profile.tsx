@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { colors } from '../lib/constants/colors';
+import { useThemeColors } from '../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/hooks/useAuth';
 import { useProfile, useInvalidateProfile } from '../lib/hooks/useProfile';
@@ -26,6 +27,8 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { data: profileData, isLoading: loading, error: profileError } = useProfile(user?.id);
   const invalidateProfile = useInvalidateProfile();
@@ -163,14 +166,14 @@ export default function EditProfileScreen() {
               accessibilityLabel="Go back"
               accessibilityRole="button"
             >
-              <Ionicons name="arrow-back" size={24} color={colors.white} />
+              <Ionicons name="arrow-back" size={24} color={sharedColors.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Edit Profile</Text>
             <View style={{ width: 24 }} />
           </View>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.header} />
         </View>
       </View>
     );
@@ -187,7 +190,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Go back"
             accessibilityRole="button"
           >
-            <Ionicons name="arrow-back" size={24} color={colors.white} />
+            <Ionicons name="arrow-back" size={24} color={sharedColors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
           <View style={{ width: 24 }} />
@@ -201,20 +204,20 @@ export default function EditProfileScreen() {
                 <Image source={{ uri: pendingAvatarUrl ?? currentAvatarUrl! }} style={styles.avatarImage} />
                 {uploadingAvatar && (
                   <View style={styles.avatarOverlay}>
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={sharedColors.white} />
                   </View>
                 )}
               </View>
             ) : (
               <View style={styles.avatar}>
                 {uploadingAvatar
-                  ? <ActivityIndicator size="small" color={colors.white} />
+                  ? <ActivityIndicator size="small" color={sharedColors.white} />
                   : <Text style={styles.avatarText}>{getInitials()}</Text>
                 }
               </View>
             )}
             <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={14} color={colors.white} />
+              <Ionicons name="camera" size={14} color={sharedColors.white} />
             </View>
           </TouchableOpacity>
         </View>
@@ -309,134 +312,126 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.gray[50],
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-
-  // Header
-  headerBg: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  avatarRow: {
-    alignItems: 'center',
-  },
-  avatarWrapper: {
-    position: 'relative',
-    width: 72,
-    height: 72,
-  },
-  avatarImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.darkCyan,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.darkCyan,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-
-  // Form
-  formArea: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  formContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
-
-  // Sports
-  sportsSection: {
-    marginBottom: 16,
-  },
-  sportsLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 10,
-  },
-  sportsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  sportButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-  },
-  sportButtonSelected: {
-    backgroundColor: colors.darkCyan,
-  },
-
-  // Text area
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-
-  // Save
-  saveButton: {
-    marginTop: 24,
-    backgroundColor: colors.green,
-  },
-  saveButtonText: {
-    color: colors.white,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.header,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+    },
+    headerBg: {
+      backgroundColor: colors.header,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: sharedColors.white,
+    },
+    avatarRow: {
+      alignItems: 'center',
+    },
+    avatarWrapper: {
+      position: 'relative',
+      width: 72,
+      height: 72,
+    },
+    avatarImage: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+    },
+    avatarOverlay: {
+      position: 'absolute',
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: colors.avatarBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarText: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: colors.avatarText,
+    },
+    cameraBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.avatarBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: sharedColors.white,
+    },
+    formArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+    },
+    formContent: {
+      padding: 24,
+      paddingBottom: 40,
+    },
+    sportsSection: {
+      marginBottom: 16,
+    },
+    sportsLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 10,
+    },
+    sportsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    sportButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderWidth: 1,
+    },
+    sportButtonSelected: {
+      backgroundColor: colors.tabBarActive,
+    },
+    textArea: {
+      height: 100,
+      textAlignVertical: 'top',
+    },
+    saveButton: {
+      marginTop: 24,
+      backgroundColor: colors.accent,
+    },
+    saveButtonText: {
+      color: sharedColors.white,
+    },
+  });
+}

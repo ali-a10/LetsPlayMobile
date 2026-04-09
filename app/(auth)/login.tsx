@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -132,61 +135,63 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  tagline: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-  },
-  button: {
-    marginTop: 8,
-  },
-  forgotPassword: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  footerText: {
-    color: colors.textLight,
-    fontSize: 14,
-  },
-  link: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 24,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 48,
+    },
+    logo: {
+      fontSize: 40,
+      fontWeight: 'bold',
+      color: colors.sectionTitle,
+    },
+    tagline: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    form: {
+      width: '100%',
+    },
+    button: {
+      marginTop: 8,
+    },
+    forgotPassword: {
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    footerText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    link: {
+      color: colors.accent,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+}

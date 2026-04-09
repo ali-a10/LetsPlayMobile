@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useMyJoinedEvents } from '../../lib/hooks/useMyJoinedEvents';
 import { useMyHostedEvents } from '../../lib/hooks/useMyHostedEvents';
 import { EventCard } from '../../components/events/EventCard';
 import { EventWithHost } from '../../lib/hooks/useEvents';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 
 /** My Events screen showing events the user has joined or is hosting, separated by a segmented control. */
 export default function MyEventsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
 
@@ -71,7 +74,7 @@ export default function MyEventsScreen() {
       return (
         <ActivityIndicator
           size="large"
-          color={colors.secondary}
+          color={colors.accent}
           style={styles.loader}
         />
       );
@@ -111,7 +114,7 @@ export default function MyEventsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={colors.statusBarStyle} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -167,97 +170,99 @@ export default function MyEventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.teal,
-  },
-  header: {
-    backgroundColor: colors.teal,
-    paddingTop: 25,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.8,
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 16,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.darkCyan,
-    overflow: 'hidden',
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: colors.white,
-  },
-  segmentActive: {
-    backgroundColor: colors.darkCyan,
-  },
-  segmentText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.teal,
-  },
-  segmentTextActive: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  loader: {
-    marginTop: 40,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 17,
-    color: colors.textLight,
-    textAlign: 'center',
-  },
-  ctaButton: {
-    marginTop: 16,
-    backgroundColor: colors.darkCyan,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  ctaText: {
-    fontSize: 16,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  retryText: {
-    fontSize: 14,
-    color: colors.secondary,
-    marginTop: 8,
-    fontWeight: '500',
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.header,
+    },
+    header: {
+      backgroundColor: colors.header,
+      paddingTop: 25,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    headerTitle: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: sharedColors.white,
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: sharedColors.white,
+      opacity: 0.8,
+      marginTop: 4,
+    },
+    content: {
+      flex: 1,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingTop: 16,
+    },
+    segmentedControl: {
+      flexDirection: 'row',
+      marginHorizontal: 20,
+      marginBottom: 16,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.tabBarActive,
+      overflow: 'hidden',
+    },
+    segment: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      backgroundColor: colors.card,
+    },
+    segmentActive: {
+      backgroundColor: colors.tabBarActive,
+    },
+    segmentText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    segmentTextActive: {
+      color: sharedColors.white,
+      fontWeight: '700',
+      fontSize: 15,
+    },
+    list: {
+      paddingHorizontal: 16,
+      paddingBottom: 20,
+    },
+    loader: {
+      marginTop: 40,
+    },
+    emptyState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    emptyText: {
+      fontSize: 17,
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+    ctaButton: {
+      marginTop: 16,
+      backgroundColor: colors.tabBarActive,
+      paddingHorizontal: 28,
+      paddingVertical: 12,
+      borderRadius: 999,
+    },
+    ctaText: {
+      fontSize: 16,
+      color: sharedColors.white,
+      fontWeight: '600',
+    },
+    retryText: {
+      fontSize: 14,
+      color: colors.accent,
+      marginTop: 8,
+      fontWeight: '500',
+    },
+  });
+}

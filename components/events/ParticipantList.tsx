@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { ParticipantWithProfile } from '../../lib/hooks/useEventDetail';
 
 const AVATAR_COLORS = [
@@ -18,9 +19,11 @@ interface ParticipantListProps {
 /** Collapsible list of event participants showing a colored avatar circle, full name, and "Host" badge per row. Always starts collapsed. */
 export function ParticipantList({ participants, maxParticipants, hostId }: ParticipantListProps) {
   const [expanded, setExpanded] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.container}>
+    <View>
       <Pressable style={styles.header} onPress={() => setExpanded((v) => !v)}>
         <Text style={styles.headerText}>
           Participants ({participants.length}/{maxParticipants})
@@ -28,7 +31,7 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
         <Ionicons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={18}
-          color={colors.textLight}
+          color={colors.textMuted}
         />
       </Pressable>
 
@@ -65,56 +68,57 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
   );
 }
 
-const styles = StyleSheet.create({
-  container: {},
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  headerText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  list: {
-    gap: 12,
-    paddingBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  avatarImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  name: {
-    fontSize: 14,
-    color: colors.text,
-    flex: 1,
-  },
-  hostBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  hostBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  empty: {
-    fontSize: 14,
-    color: colors.textLight,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 14,
+    },
+    headerText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    list: {
+      gap: 12,
+      paddingBottom: 16,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+    },
+    avatarImage: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+    },
+    name: {
+      fontSize: 14,
+      color: colors.text,
+      flex: 1,
+    },
+    hostBadge: {
+      backgroundColor: colors.header,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    hostBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: sharedColors.white,
+    },
+    empty: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+  });
+}

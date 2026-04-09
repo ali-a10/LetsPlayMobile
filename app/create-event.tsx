@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,8 @@ import { useRouter } from 'expo-router';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
-import { colors } from '../lib/constants/colors';
+import { useThemeColors } from '../lib/hooks/useThemeColors';
+import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { SPORT_OPTIONS } from '../lib/constants/sports';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/hooks/useAuth';
@@ -28,6 +29,8 @@ export default function CreateEventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Synchronous guard to prevent double submission
   const submittingRef = useRef(false);
@@ -242,7 +245,7 @@ export default function CreateEventScreen() {
           accessibilityRole="button"
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.white} />
+          <Ionicons name="arrow-back" size={24} color={sharedColors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Event</Text>
         <Text style={styles.headerSubtitle}>Set up a new game or activity</Text>
@@ -408,8 +411,8 @@ export default function CreateEventScreen() {
             <Switch
               value={isPaid}
               onValueChange={setIsPaid}
-              trackColor={{ false: colors.gray[200], true: colors.secondary }}
-              thumbColor={isPaid ? colors.primary : colors.gray[400]}
+              trackColor={{ false: colors.inputBorder, true: colors.accent }}
+              thumbColor={isPaid ? colors.header : colors.chevron}
             />
           </View>
 
@@ -437,114 +440,117 @@ export default function CreateEventScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
+/** Creates theme-aware styles for the CreateEvent screen. */
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.header,
+    },
 
-  // Header
-  headerBg: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.white,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.8,
-    marginTop: 2,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
+    // Header
+    headerBg: {
+      backgroundColor: colors.header,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    backButton: {
+      marginBottom: 8,
+    },
+    headerTitle: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: sharedColors.white,
+      textAlign: 'center',
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: sharedColors.white,
+      opacity: 0.8,
+      marginTop: 2,
+      marginBottom: 5,
+      textAlign: 'center',
+    },
 
-  // Form area
-  formArea: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  formContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
-  form: {
-    width: '100%',
-  },
-  fieldContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  dateButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
-    backgroundColor: colors.background,
-  },
-  dateButtonError: {
-    borderColor: colors.error,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  dateButtonPlaceholder: {
-    color: colors.textLight,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 4,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingVertical: 8,
-  },
-  switchLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  pickerActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginBottom: 16,
-  },
-  pickerButton: {
-    height: 36,
-    paddingHorizontal: 16,
-  },
-  hintText: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginTop: -12,
-  },
-  submitButton: {
-    marginTop: 24,
-    marginBottom: 40,
-  },
-});
+    // Form area
+    formArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+    },
+    formContent: {
+      padding: 24,
+      paddingBottom: 40,
+    },
+    form: {
+      width: '100%',
+    },
+    fieldContainer: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      padding: 14,
+      backgroundColor: colors.inputBg,
+    },
+    dateButtonError: {
+      borderColor: colors.error,
+    },
+    dateButtonText: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    dateButtonPlaceholder: {
+      color: colors.textMuted,
+    },
+    errorText: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 4,
+    },
+    textArea: {
+      height: 100,
+      textAlignVertical: 'top',
+    },
+    switchRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingVertical: 8,
+    },
+    switchLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    pickerActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 8,
+      marginBottom: 16,
+    },
+    pickerButton: {
+      height: 36,
+      paddingHorizontal: 16,
+    },
+    hintText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: -12,
+    },
+    submitButton: {
+      marginTop: 24,
+      marginBottom: 40,
+    },
+  });
+}

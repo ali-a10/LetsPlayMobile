@@ -2,13 +2,14 @@
 import React from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Rect, Line } from 'react-native-svg';
-import { colors } from '../../lib/constants/colors';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
-const LINE_COLOR = colors.secondary;
 const OP = 0.15;
 
 export function SportsFieldBackground() {
   const { width, height } = useWindowDimensions();
+  const colors = useThemeColors();
+  const lineColor = colors.accent;
 
   /* Court is offset and slightly rotated via transform to feel abstract */
   const courtW = width * 0.9;
@@ -29,7 +30,7 @@ export function SportsFieldBackground() {
         y={courtY}
         width={courtW}
         height={courtH}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1.5}
         fill="none"
         opacity={OP}
@@ -42,7 +43,7 @@ export function SportsFieldBackground() {
         y1={courtY + courtH / 2}
         x2={courtX + courtW}
         y2={courtY + courtH / 2}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1.5}
         opacity={OP}
       />
@@ -52,7 +53,7 @@ export function SportsFieldBackground() {
         cx={courtX + courtW / 2}
         cy={courtY + courtH / 2}
         r={width * 0.14}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1.5}
         fill="none"
         opacity={OP}
@@ -64,7 +65,7 @@ export function SportsFieldBackground() {
         y={courtY}
         width={width * 0.24}
         height={courtH * 0.3}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1}
         fill="none"
         opacity={OP}
@@ -75,7 +76,7 @@ export function SportsFieldBackground() {
         cx={courtX + courtW / 2}
         cy={courtY + courtH * 0.3}
         r={width * 0.12}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1}
         fill="none"
         opacity={OP}
@@ -88,7 +89,7 @@ export function SportsFieldBackground() {
         y={courtY + courtH * 0.7}
         width={width * 0.24}
         height={courtH * 0.3}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1}
         fill="none"
         opacity={OP}
@@ -99,7 +100,7 @@ export function SportsFieldBackground() {
         cx={courtX + courtW / 2}
         cy={courtY + courtH * 0.7}
         r={width * 0.12}
-        stroke={LINE_COLOR}
+        stroke={lineColor}
         strokeWidth={1}
         fill="none"
         opacity={OP}
