@@ -35,8 +35,10 @@ export default function CreateEventScreen() {
   // Synchronous guard to prevent double submission
   const submittingRef = useRef(false);
 
-  // Guard against the spurious onChange fired when the iOS spinner unmounts
-  const pickerAccepting = useRef(false);
+  // Buffer picker scroll values on iOS so we don't pass them back as value= mid-scroll
+  // (feeding state back into the native spinner while it's moving causes it to reset)
+  const pendingDateRef = useRef<Date | null>(null);
+  const pendingTimeRef = useRef<Date | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -119,18 +121,30 @@ export default function CreateEventScreen() {
 
   /** Handles the date selection from the native date picker. */
   function handleDateChange(_event: any, selectedDate?: Date) {
-    if (Platform.OS === 'android') setActivePicker(null);
-    if (!pickerAccepting.current || !selectedDate) return;
-    setDate(selectedDate);
-    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+    if (Platform.OS === 'android') {
+      setActivePicker(null);
+      if (selectedDate) {
+        setDate(selectedDate);
+        if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+      }
+      return;
+    }
+    // iOS: buffer the value — do not write back to state mid-scroll
+    if (selectedDate) pendingDateRef.current = selectedDate;
   }
 
   /** Handles the time selection from the native time picker. */
   function handleTimeChange(_event: any, selectedTime?: Date) {
-    if (Platform.OS === 'android') setActivePicker(null);
-    if (!pickerAccepting.current || !selectedTime) return;
-    setTime(selectedTime);
-    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+    if (Platform.OS === 'android') {
+      setActivePicker(null);
+      if (selectedTime) {
+        setTime(selectedTime);
+        if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+      }
+      return;
+    }
+    // iOS: buffer the value — do not write back to state mid-scroll
+    if (selectedTime) pendingTimeRef.current = selectedTime;
   }
 
   /** Validates all required fields and sets error messages. */
@@ -294,7 +308,7 @@ export default function CreateEventScreen() {
               ]}
               onPress={() => {
                 Keyboard.dismiss();
-                pickerAccepting.current = true;
+                pendingDateRef.current = null;
                 setActivePicker('date');
               }}
             >
@@ -328,7 +342,7 @@ export default function CreateEventScreen() {
               ]}
               onPress={() => {
                 Keyboard.dismiss();
-                pickerAccepting.current = true;
+                pendingTimeRef.current = null;
                 setActivePicker('time');
               }}
             >
@@ -362,7 +376,15 @@ export default function CreateEventScreen() {
                 title="Done"
                 variant="outline"
                 onPress={() => {
-                  pickerAccepting.current = false;
+                  if (activePicker === 'date' && pendingDateRef.current) {
+                    setDate(pendingDateRef.current);
+                    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+                    pendingDateRef.current = null;
+                  } else if (activePicker === 'time' && pendingTimeRef.current) {
+                    setTime(pendingTimeRef.current);
+                    if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+                    pendingTimeRef.current = null;
+                  }
                   setActivePicker(null);
                 }}
                 style={styles.pickerButton}
