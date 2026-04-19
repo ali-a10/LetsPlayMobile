@@ -16,11 +16,11 @@ import { Select } from '../../components/ui/Select';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
+import { supabase } from '../../lib/supabase';
 
 const GENDER_OPTIONS = [
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
-  { label: 'Non-binary', value: 'non-binary' },
   { label: 'Prefer not to say', value: 'prefer-not-to-say' },
 ];
 
@@ -103,6 +103,9 @@ export default function OnboardingDetailsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Your Details</Text>
           <Text style={styles.subtitle}>Step 2 of 3</Text>
+          <TouchableOpacity onPress={() => supabase.auth.signOut()} style={styles.cancelButton}>
+            <Text style={styles.cancelText}>Cancel sign up</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
@@ -194,6 +197,14 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
       color: colors.textMuted,
       marginTop: 8,
+    },
+    cancelButton: {
+      marginTop: 12,
+    },
+    cancelText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textDecorationLine: 'underline',
     },
     form: {
       width: '100%',

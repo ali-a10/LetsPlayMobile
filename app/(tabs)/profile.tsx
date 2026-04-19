@@ -114,9 +114,8 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <MenuItem colors={colors} icon="create-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
-        <MenuItem colors={colors} icon="mail-outline" label="Email Preferences" />
+        {/* <MenuItem colors={colors} icon="mail-outline" label="Email Preferences" /> */}
         <MenuItem colors={colors} icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
-        <MenuItem colors={colors} icon="shield-checkmark-outline" label="Privacy Policy" />
       </View>
 
       {/* Social Section */}
@@ -130,7 +129,9 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support & Legal</Text>
         <MenuItem colors={colors} icon="help-circle-outline" label="Help / FAQ" />
+        <MenuItem colors={colors} icon="close-circle-outline" label="Cancellation Policy" />
         <MenuItem colors={colors} icon="document-text-outline" label="Terms of Service" />
+        <MenuItem colors={colors} icon="shield-checkmark-outline" label="Privacy Policy" />
       </View>
 
       {/* Log Out */}

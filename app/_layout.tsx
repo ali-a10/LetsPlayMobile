@@ -4,6 +4,7 @@ import { Linking, StatusBar } from 'react-native';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 import { useAuth } from '../lib/hooks/useAuth';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
+import { useThemeStore } from '../lib/stores/themeStore';
 import { supabase } from '../lib/supabase';
 
 /** Provides a theme-aware StatusBar that updates when the user toggles dark mode. */
@@ -17,6 +18,14 @@ function AuthGate() {
   const segments = useSegments();
   const router = useRouter();
   const [checkingProfile, setCheckingProfile] = useState(false);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
+
+  // Reset theme to light when signed out so auth screens are always light.
+  useEffect(() => {
+    if (!loading && !session) {
+      setThemePreference('light');
+    }
+  }, [session, loading]);
 
   // Handle password reset deep links (letsplay://auth/reset-password#access_token=...&type=recovery)
   useEffect(() => {
