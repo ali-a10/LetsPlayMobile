@@ -10,10 +10,16 @@ export function WelcomeHero() {
   return (
     <View style={styles.container}>
       <SportsFieldBackground />
-      <Text style={[styles.eyebrow, { color: colors.accent }]}>
-        WELCOME TO LETSPLAY
-      </Text>
-      <Text style={styles.headline}>{'How it\nworks'}</Text>
+      <View style={styles.content}>
+        <View style={styles.eyebrowRow}>
+          <View style={[styles.eyebrowLine, { backgroundColor: colors.accent }]} />
+          <Text style={[styles.eyebrow, { color: colors.accent }]}>
+            WELCOME TO LETSPLAY
+          </Text>
+          <View style={[styles.eyebrowLine, { backgroundColor: colors.accent }]} />
+        </View>
+        <Text style={styles.headline}>How it works</Text>
+      </View>
     </View>
   );
 }
@@ -22,15 +28,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  content: {
+    alignItems: 'center',
+    marginBottom: '25%',
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 10,
+  },
+  eyebrowLine: {
+    width: 20,
+    height: 1.5,
+    borderRadius: 1,
+    opacity: 0.6,
   },
   eyebrow: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 2,
-    marginBottom: 12,
+    letterSpacing: 3.5,
   },
   headline: {
     fontSize: 38,

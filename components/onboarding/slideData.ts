@@ -1,11 +1,13 @@
-/** Static content for each onboarding carousel slide. */
+import { ImageSourcePropType } from 'react-native';
 
+/** Static content for each onboarding carousel slide. */
 export interface SlideData {
   kind: 'welcome' | 'step';
   step?: number;
   eyebrow: string;
   headline: string;
   body: string;
+  image?: ImageSourcePropType;
 }
 
 export const slides: SlideData[] = [
@@ -21,6 +23,7 @@ export const slides: SlideData[] = [
     eyebrow: 'STEP 1',
     headline: 'Discover games near you',
     body: 'Browse pickup games by sport, location, and time — all in one place.',
+    image: require('../../assets/onboarding/discover-games.png'),
   },
   {
     kind: 'step',
@@ -42,5 +45,6 @@ export const slides: SlideData[] = [
     eyebrow: 'STEP 4',
     headline: 'Track everything in one place',
     body: 'See your upcoming games, manage events you\'re hosting, and never miss a match.',
+    image: require('../../assets/onboarding/my-events.png'),
   },
 ];

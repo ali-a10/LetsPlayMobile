@@ -44,18 +44,21 @@ export function OnboardingChrome({
       {!isLastSlide && (
         <TouchableOpacity
           onPress={onSkip}
-          style={
-            isWelcomeSlide
-              ? [styles.skipPill, styles.skipPillOnHero]
-              : styles.skipPlain
-          }
+          style={[
+            styles.skipPill,
+            {
+              backgroundColor: isWelcomeSlide
+                ? 'rgba(255,255,255,0.18)'
+                : 'rgba(13,92,99,0.5)',
+            },
+          ]}
           accessibilityLabel="Skip to last slide"
           accessibilityRole="button"
         >
           <Text
             style={[
               styles.skipText,
-              { color: isWelcomeSlide ? sharedColors.white : colors.textMuted },
+              { color: sharedColors.white },
             ]}
           >
             Skip
