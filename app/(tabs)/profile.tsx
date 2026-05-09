@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { useProfile } from '../../lib/hooks/useProfile';
+import { useUserStats } from '../../lib/hooks/useUserStats';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 
@@ -25,36 +26,7 @@ export default function ProfileScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
-  const [stats, setStats] = useState({ joined: 0, hosted: 0 });
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  /** Fetches the user's computed stats from Supabase. */
-  useFocusEffect(
-    useCallback(() => {
-      if (!user) return;
-
-      const fetchStats = async () => {
-        const [joinedRes, hostedRes] = await Promise.all([
-          supabase
-            .from('participants')
-            .select('event_id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          supabase
-            .from('events')
-            .select('id', { count: 'exact', head: true })
-            .eq('host_id', user.id),
-        ]);
-
-        setStats({
-          joined: joinedRes.count ?? 0,
-          hosted: hostedRes.count ?? 0,
-        });
-        setStatsLoading(false);
-      };
-
-      fetchStats();
-    }, [user])
-  );
+  const { data: stats, isLoading: statsLoading } = useUserStats(user?.id);
 
   if (profileLoading || statsLoading) {
     return (
@@ -94,11 +66,11 @@ export default function ProfileScreen() {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.joined}</Text>
+            <Text style={styles.statNumber}>{stats?.joined ?? 0}</Text>
             <Text style={styles.statLabel}>Events Joined</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.hosted}</Text>
+            <Text style={styles.statNumber}>{stats?.hosted ?? 0}</Text>
             <Text style={styles.statLabel}>Events Hosted</Text>
           </View>
         </View>

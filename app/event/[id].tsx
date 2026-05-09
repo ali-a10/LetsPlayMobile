@@ -5,6 +5,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
+import { useAuth } from '../../lib/hooks/useAuth';
 import { useEventDetail } from '../../lib/hooks/useEventDetail';
 import { useJoinEvent } from '../../lib/hooks/useJoinEvent';
 import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
@@ -27,6 +28,7 @@ function formatTime(iso: string): string {
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { data: event, isLoading, error: fetchError } = useEventDetail(id);
@@ -237,7 +239,16 @@ export default function EventDetailScreen() {
           </View>
 
           {/* Host card */}
-          <View style={styles.hostCard}>
+          <Pressable
+            style={styles.hostCard}
+            onPress={() => {
+              if (event.host_id !== user?.id) {
+                router.push(`/user/${event.host_id}`);
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${hostName}'s profile`}
+          >
             {event.profiles?.avatar_url ? (
               <Image source={{ uri: event.profiles.avatar_url }} style={styles.hostAvatarImage} />
             ) : (
@@ -253,7 +264,7 @@ export default function EventDetailScreen() {
               <Text style={styles.detailLabel}>Hosted by</Text>
               <Text style={styles.hostName}>{hostName}</Text>
             </View>
-          </View>
+          </Pressable>
 
           {/* Capacity + Participants card */}
           <View style={styles.participantsCard}>

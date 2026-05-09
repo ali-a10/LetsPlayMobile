@@ -14,6 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
@@ -29,6 +30,7 @@ export default function CreateEventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -227,6 +229,10 @@ export default function CreateEventScreen() {
         console.error('Event creation failed:', error);
         Alert.alert('Error', friendlyErrorMessage(error));
       } else {
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+        queryClient.invalidateQueries({ queryKey: ['my-hosted-events', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['my-joined-events', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['userStats', user.id] });
         setTitle('');
         setSport(null);
         setDate(null);

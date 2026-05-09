@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
+import { useAuth } from '../../lib/hooks/useAuth';
 import { ParticipantWithProfile } from '../../lib/hooks/useEventDetail';
 
 const AVATAR_COLORS = [
@@ -21,6 +23,7 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
   const [expanded, setExpanded] = useState(false);
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { user } = useAuth();
 
   return (
     <View>
@@ -45,8 +48,17 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
               const lastName = p.profiles?.last_name ?? '';
               const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
               const isHost = p.user_id === hostId;
+              const isSelf = p.user_id === user?.id;
               return (
-                <View key={p.user_id} style={styles.row}>
+                <Pressable
+                  key={p.user_id}
+                  style={styles.row}
+                  onPress={() => {
+                    if (!isSelf) router.push(`/user/${p.user_id}`);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${firstName} ${lastName}'s profile`}
+                >
                   {p.profiles?.avatar_url ? (
                     <Image source={{ uri: p.profiles.avatar_url }} style={styles.avatarImage} />
                   ) : (
@@ -58,7 +70,7 @@ export function ParticipantList({ participants, maxParticipants, hostId }: Parti
                       <Text style={styles.hostBadgeText}>Host</Text>
                     </View>
                   )}
-                </View>
+                </Pressable>
               );
             })
           )}
