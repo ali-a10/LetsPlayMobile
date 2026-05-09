@@ -19,6 +19,7 @@ export function useLeaveEvent(eventId: string) {
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['my-joined-events', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['userStats', user?.id] });
     },
   });
 }
