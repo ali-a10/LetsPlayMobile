@@ -55,6 +55,22 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+
+      {/* Privacy Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Privacy</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.optionRow}
+            activeOpacity={0.6}
+            onPress={() => router.push('/blocked-users')}
+          >
+            <Ionicons name="ban-outline" size={20} color={colors.textMuted} />
+            <Text style={styles.optionLabel}>Blocked Users</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }

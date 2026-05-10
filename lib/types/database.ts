@@ -135,6 +135,84 @@ export type Database = {
           },
         ];
       };
+      blocks: {
+        Row: {
+          blocker_id: string;
+          blocked_id: string;
+          created_at: string;
+        };
+        Insert: {
+          blocker_id: string;
+          blocked_id: string;
+          created_at?: string;
+        };
+        Update: {
+          blocker_id?: string;
+          blocked_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'blocks_blocker_id_fkey';
+            columns: ['blocker_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'blocks_blocked_id_fkey';
+            columns: ['blocked_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          reported_id: string;
+          reason: ReportReason;
+          details: string | null;
+          status: ReportStatus;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          reported_id: string;
+          reason: ReportReason;
+          details?: string | null;
+          status?: ReportStatus;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          reported_id?: string;
+          reason?: ReportReason;
+          details?: string | null;
+          status?: ReportStatus;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'reports_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'reports_reported_id_fkey';
+            columns: ['reported_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {
@@ -146,12 +224,30 @@ export type Database = {
         Args: { p_event_id: string };
         Returns: undefined;
       };
+      block_user: {
+        Args: { p_blocked_id: string };
+        Returns: undefined;
+      };
     };
-    Enums: {};
+    Enums: {
+      report_reason: ReportReason;
+      report_status: ReportStatus;
+    };
     CompositeTypes: {};
   };
 };
 
+export type ReportReason =
+  | 'harassment'
+  | 'inappropriate'
+  | 'fake_profile'
+  | 'spam'
+  | 'other';
+
+export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
+
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Event = Database['public']['Tables']['events']['Row'];
 export type Participant = Database['public']['Tables']['participants']['Row'];
+export type Block = Database['public']['Tables']['blocks']['Row'];
+export type Report = Database['public']['Tables']['reports']['Row'];

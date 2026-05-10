@@ -11,8 +11,9 @@ export function useUserStats(userId: string | undefined) {
       const [joinedRes, hostedRes] = await Promise.all([
         supabase
           .from('participants')
-          .select('event_id', { count: 'exact', head: true })
-          .eq('user_id', userId!),
+          .select('event_id, events!inner(host_id)', { count: 'exact', head: true })
+          .eq('user_id', userId!)
+          .neq('events.host_id', userId!),
         supabase
           .from('events')
           .select('id', { count: 'exact', head: true })
