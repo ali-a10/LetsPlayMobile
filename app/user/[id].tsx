@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -16,7 +17,12 @@ import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { useUserStats } from '../../lib/hooks/useUserStats';
+import { useIsBlocked } from '../../lib/hooks/useIsBlocked';
+import { useBlockUser } from '../../lib/hooks/useBlockUser';
+import { useUnblockUser } from '../../lib/hooks/useUnblockUser';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
+import { ConfirmModal } from '../../components/events/ConfirmModal';
+import { ReportUserModal } from '../../components/profile/ReportUserModal';
 
 /** Public read-only profile screen for viewing another user's identity, stats, bio, and favorite sports. */
 export default function UserProfileScreen() {
@@ -37,6 +43,16 @@ export default function UserProfileScreen() {
 
   const { data: profile, isLoading, error } = useProfile(isSelf ? undefined : id);
   const { data: stats } = useUserStats(isSelf ? undefined : id);
+  const { data: isBlocked, isLoading: isBlockedLoading } = useIsBlocked(
+    isSelf ? undefined : id,
+    isSelf ? undefined : user?.id,
+  );
+  const blockMutation = useBlockUser();
+  const unblockMutation = useUnblockUser();
+
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [reportVisible, setReportVisible] = useState(false);
 
   if (isSelf) {
     return null;
@@ -69,6 +85,34 @@ export default function UserProfileScreen() {
   };
 
   const favoriteSports = profile.favourite_sports ?? [];
+  const isMutating = blockMutation.isPending || unblockMutation.isPending;
+  const firstName = profile.first_name ?? 'this user';
+
+  /** Opens the block/unblock confirmation modal. */
+  const openConfirm = () => {
+    if (isBlockedLoading || isMutating) return;
+    setConfirmError(null);
+    setConfirmVisible(true);
+  };
+
+  /** Closes the confirmation modal unless a mutation is in flight. */
+  const closeConfirm = () => {
+    if (isMutating) return;
+    setConfirmVisible(false);
+    setConfirmError(null);
+  };
+
+  /** Runs the block or unblock mutation depending on the current state. */
+  const handleConfirm = () => {
+    setConfirmError(null);
+    const onError = (err: Error) => setConfirmError(err.message);
+    const onSuccess = () => setConfirmVisible(false);
+    if (isBlocked) {
+      unblockMutation.mutate(id, { onSuccess, onError });
+    } else {
+      blockMutation.mutate(id, { onSuccess, onError });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -157,17 +201,61 @@ export default function UserProfileScreen() {
 
         {/* Block / Report actions */}
         <View style={styles.card}>
-          <Pressable style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Block user">
-            <Ionicons name="ban-outline" size={18} color={colors.error} />
-            <Text style={styles.actionBtnText}>Block User</Text>
+          <Pressable
+            style={[styles.actionBtn, (isBlockedLoading || isMutating) && styles.actionBtnDisabled]}
+            onPress={openConfirm}
+            disabled={isBlockedLoading || isMutating}
+            accessibilityRole="button"
+            accessibilityLabel={isBlocked ? 'Unblock user' : 'Block user'}
+          >
+            <Ionicons
+              name={isBlocked ? 'checkmark-circle-outline' : 'ban-outline'}
+              size={18}
+              color={colors.error}
+            />
+            <Text style={styles.actionBtnText}>
+              {isBlocked ? 'Unblock User' : 'Block User'}
+            </Text>
           </Pressable>
           <View style={styles.actionDivider} />
-          <Pressable style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Report user">
+          <Pressable
+            style={styles.actionBtn}
+            onPress={() => setReportVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Report user"
+          >
             <Ionicons name="flag-outline" size={18} color={colors.error} />
             <Text style={styles.actionBtnText}>Report User</Text>
           </Pressable>
         </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={confirmVisible}
+        isPending={isMutating}
+        error={confirmError}
+        title={isBlocked ? `Unblock ${firstName}?` : `Block ${firstName}?`}
+        body={
+          isBlocked
+            ? 'They will be able to see events you host again.'
+            : "They won't be able to see events you host. They will not be notified."
+        }
+        confirmLabel={isBlocked ? 'Unblock' : 'Block'}
+        confirmColor={isBlocked ? colors.header : colors.error}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirm}
+      />
+
+      <ReportUserModal
+        visible={reportVisible}
+        targetUserId={id}
+        targetName={firstName}
+        onClose={() => setReportVisible(false)}
+        onSuccess={() => {
+          setReportVisible(false);
+          Alert.alert('Thanks', 'Your report has been submitted.');
+        }}
+      />
     </View>
   );
 }
@@ -334,6 +422,9 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
       gap: 12,
       paddingVertical: 12,
+    },
+    actionBtnDisabled: {
+      opacity: 0.5,
     },
     actionBtnText: {
       fontSize: 15,

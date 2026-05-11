@@ -4,29 +4,39 @@ import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 
 interface ConfirmModalProps {
-  type: 'join' | 'leave';
   visible: boolean;
   isPending: boolean;
   error: string | null;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  confirmColor?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-/** Confirmation modal for joining or leaving an event, with loading and error states. */
-export function ConfirmModal({ type, visible, isPending, error, onConfirm, onCancel }: ConfirmModalProps) {
+/** Generic confirmation modal with title/body/confirm label, plus loading and error states. */
+export function ConfirmModal({
+  visible,
+  isPending,
+  error,
+  title,
+  body,
+  confirmLabel,
+  confirmColor,
+  onConfirm,
+  onCancel,
+}: ConfirmModalProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const config = type === 'join'
-    ? { title: 'Join Event?', body: 'Are you sure you want to join this event?', confirmLabel: 'Confirm', confirmColor: colors.header }
-    : { title: 'Leave Event?', body: 'Are you sure you want to leave this event?', confirmLabel: 'Leave', confirmColor: '#E53E3E' };
+  const buttonColor = confirmColor ?? colors.header;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>{config.title}</Text>
-          <Text style={styles.body}>{config.body}</Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.body}>{body}</Text>
 
           {error && <Text style={styles.error}>{error}</Text>}
 
@@ -35,13 +45,13 @@ export function ConfirmModal({ type, visible, isPending, error, onConfirm, onCan
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable
-              style={[styles.confirmBtn, { backgroundColor: config.confirmColor }, isPending && styles.btnDisabled]}
+              style={[styles.confirmBtn, { backgroundColor: buttonColor }, isPending && styles.btnDisabled]}
               onPress={onConfirm}
               disabled={isPending}
             >
               {isPending
                 ? <ActivityIndicator size="small" color={sharedColors.white} />
-                : <Text style={styles.confirmText}>{config.confirmLabel}</Text>}
+                : <Text style={styles.confirmText}>{confirmLabel}</Text>}
             </Pressable>
           </View>
         </View>

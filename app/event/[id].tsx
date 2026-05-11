@@ -314,7 +314,10 @@ export default function EventDetailScreen() {
         error={joinError}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-        type="join"
+        title="Join Event?"
+        body="Are you sure you want to join this event?"
+        confirmLabel="Confirm"
+        confirmColor={colors.header}
       />
 
       <ConfirmModal
@@ -323,7 +326,10 @@ export default function EventDetailScreen() {
         error={leaveError}
         onConfirm={handleLeaveConfirm}
         onCancel={handleLeaveCancel}
-        type="leave"
+        title="Leave Event?"
+        body="Are you sure you want to leave this event?"
+        confirmLabel="Leave"
+        confirmColor={colors.error}
       />
     </SafeAreaView>
   );
