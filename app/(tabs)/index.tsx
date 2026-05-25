@@ -48,7 +48,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { data: events, isLoading, error, refetch } = useEvents();
+  const { data: events, isLoading, isFetching, error, refetch } = useEvents();
 
   const searchText = useFilterStore((s) => s.searchText);
   const setSearchText = useFilterStore((s) => s.setSearchText);
@@ -354,19 +354,29 @@ export default function HomeScreen() {
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={filteredEvents}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            onRefresh={refetch}
-            refreshing={isLoading}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No events found</Text>
+          <View style={styles.listWrapper}>
+            {/* Small spinner while a filter refetch is in flight (list stays visible) */}
+            {isFetching && (
+              <View style={styles.fetchingOverlay} pointerEvents="none">
+                <View style={styles.fetchingBadge}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                </View>
               </View>
-            }
-          />
+            )}
+            <FlatList
+              data={filteredEvents}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+              onRefresh={refetch}
+              refreshing={isLoading}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No events found</Text>
+                </View>
+              }
+            />
+          </View>
         )}
       </View>
 
@@ -607,6 +617,27 @@ function createStyles(colors: ThemeColors) {
     list: {
       paddingHorizontal: 16,
       paddingBottom: 20,
+    },
+    listWrapper: {
+      flex: 1,
+    },
+    fetchingOverlay: {
+      position: 'absolute',
+      top: 8,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      zIndex: 10,
+    },
+    fetchingBadge: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 6,
+      shadowColor: sharedColors.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+      elevation: 4,
     },
     loader: {
       marginTop: 40,
