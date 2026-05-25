@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -81,8 +82,12 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.logo}>LetsPlay</Text>
-            <Text style={styles.tagline}>Find your next game</Text>
+            <Image
+              source={require('../../assets/logo-nobg-cropped.png')}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityLabel="LetsPlay logo"
+            />
           </View>
 
           <View style={styles.form}>
@@ -152,25 +157,22 @@ function createStyles(colors: ThemeColors) {
     },
     scrollContent: {
       flexGrow: 1,
-      justifyContent: 'center',
-      padding: 24,
+      justifyContent: 'flex-start',
+      paddingHorizontal: 24,
+      paddingBottom: 24,
     },
     header: {
       alignItems: 'center',
-      marginBottom: 48,
+      marginBottom: 4,
     },
     logo: {
-      fontSize: 40,
-      fontWeight: 'bold',
-      color: colors.sectionTitle,
-    },
-    tagline: {
-      fontSize: 16,
-      color: colors.textMuted,
-      marginTop: 8,
+      width: 270,
+      height: 270,
+      marginTop: -30,
     },
     form: {
       width: '100%',
+      marginTop: -20,
     },
     button: {
       marginTop: 8,

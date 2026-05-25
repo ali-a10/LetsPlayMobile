@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/ui/Button';
@@ -17,8 +17,12 @@ export default function WelcomeScreen() {
       <SportsFieldBackground />
 
       <View style={styles.hero}>
-        <Text style={styles.logo}>LetsPlay</Text>
-        <Text style={styles.tagline}>Find your next game</Text>
+        <Image
+          source={require('../../assets/logo-nobg-cropped.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="LetsPlay logo"
+        />
       </View>
 
       <View style={styles.actions}>
@@ -64,15 +68,8 @@ function createStyles(colors: ThemeColors) {
       alignItems: 'center',
     },
     logo: {
-      fontSize: 48,
-      fontWeight: 'bold',
-      color: sharedColors.white,
-    },
-    tagline: {
-      fontSize: 16,
-      color: sharedColors.white,
-      opacity: 0.8,
-      marginTop: 8,
+      width: 300,
+      height: 300,
     },
     actions: {
       width: '100%',
