@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
+import { LocationAutocomplete, SelectedPlace } from '../components/ui/LocationAutocomplete';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { SPORT_OPTIONS } from '../lib/constants/sports';
@@ -48,7 +49,7 @@ export default function CreateEventScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<Date | null>(null);
   const [activePicker, setActivePicker] = useState<'date' | 'time' | null>(null);
-  const [location, setLocation] = useState('');
+  const [place, setPlace] = useState<SelectedPlace | null>(null);
   const [description, setDescription] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('10');
   const [isPaid, setIsPaid] = useState(false);
@@ -171,8 +172,8 @@ export default function CreateEventScreen() {
       }
     }
 
-    if (!location.trim()) {
-      newErrors.location = 'Location is required';
+    if (!place) {
+      newErrors.location = 'Please select a location';
     }
 
     if (!maxParticipants.trim()) {
@@ -217,7 +218,9 @@ export default function CreateEventScreen() {
           title: title.trim(),
           sport: sport!,
           date: combined.toISOString(),
-          location: location.trim(),
+          location: place!.address,
+          latitude: place!.latitude,
+          longitude: place!.longitude,
           description: description.trim() || null,
           max_participants: parseInt(maxParticipants, 10) || 10,
           is_paid: isPaid,
@@ -237,7 +240,7 @@ export default function CreateEventScreen() {
         setSport(null);
         setDate(null);
         setTime(null);
-        setLocation('');
+        setPlace(null);
         setDescription('');
         setMaxParticipants('10');
         setIsPaid(false);
@@ -398,16 +401,13 @@ export default function CreateEventScreen() {
             </View>
           )}
 
-          <Input
+          <LocationAutocomplete
             label="Location"
-            placeholder="e.g. Central Park Court 3"
-            value={location}
-            onChangeText={(text) => {
-              setLocation(text);
+            error={errors.location}
+            onSelect={(selected) => {
+              setPlace(selected);
               if (errors.location) setErrors(prev => ({ ...prev, location: undefined }));
             }}
-            maxLength={100}
-            error={errors.location}
           />
 
           <Input

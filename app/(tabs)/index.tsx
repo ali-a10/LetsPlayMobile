@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
   TouchableOpacity,
   Platform,
   Modal,
+  Alert,
+  Linking,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +24,7 @@ import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { useEvents, EventWithHost } from '../../lib/hooks/useEvents';
 import { useFilterStore } from '../../lib/stores/filterStore';
 import { useLocationStore } from '../../lib/stores/useLocationStore';
+import { useNearestSort } from '../../lib/hooks/useNearestSort';
 import { haversineKm } from '../../lib/utils/distance';
 import { toDayKey } from '../../lib/utils/dateRange';
 import { EventCard } from '../../components/events/EventCard';
@@ -33,6 +37,8 @@ const SEARCH_BAR_MARGIN_TOP = 8;
 const FILTER_PANEL_EXTRA = 130;
 const ANIMATED_TOTAL_HEIGHT =
   SEARCH_BAR_HEIGHT + SEARCH_BAR_MARGIN_TOP + FILTER_PANEL_EXTRA;
+/** Extra panel height to fit the two-line "location denied" notice when shown. */
+const DENIAL_ROW_HEIGHT = 56;
 
 /** Formats a 'YYYY-MM-DD' day key as a short 'MMM D' label. */
 function formatDayLabel(key: string): string {
@@ -70,30 +76,72 @@ export default function HomeScreen() {
   // Date picker state — iOS buffers the spinner value until "Done" is pressed.
   const [showDatePicker, setShowDatePicker] = useState(false);
   const pendingDateRef = useRef<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const todayKey = toDayKey(new Date());
-  const tomorrowKey = useMemo(() => {
-    const t = new Date();
-    return toDayKey(new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1));
-  }, []);
+  /** Pull-to-refresh handler that drives the native spinner independently of filter refetches. */
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Computed fresh each render so they stay correct if the app sits open past midnight.
+  const now = new Date();
+  const todayKey = toDayKey(now);
+  const tomorrowKey = toDayKey(
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  );
   const isToday = date === todayKey;
   const isTomorrow = date === tomorrowKey;
   const isCustomDate = date != null && !isToday && !isTomorrow;
 
-  // Nearest sort is wired in commit 2 (location permission flow); inert for now.
-  const nearestDisabled = true;
-  const handleNearestPress = () => {};
+  const { status: locationStatus, enableNearest, syncPermission } = useNearestSort();
+  const nearestDisabled = locationStatus === 'denied';
+  const [nearestLoading, setNearestLoading] = useState(false);
 
-  /** Slides the search/filter panel into or out of view and updates visibility state. */
+  /** Activates the Nearest sort, prompting for location if needed; alerts on transient failures. */
+  const handleNearestPress = async () => {
+    setNearestLoading(true);
+    try {
+      const result = await enableNearest();
+      if (!result.ok && !result.denied) {
+        Alert.alert('Location unavailable', "We couldn't get your location. Please try again.");
+      }
+    } finally {
+      setNearestLoading(false);
+    }
+  };
+
+  // Re-sync location permission when the app returns to foreground (e.g. after the
+  // user grants access in Settings), so the Nearest segment re-enables without reopening.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') syncPermission();
+    });
+    return () => sub.remove();
+  }, [syncPermission]);
+
+  /** Toggles the search/filter panel; silently syncs location permission when opening. */
   const toggleSearch = () => {
     const opening = !searchVisible;
     setSearchVisible(opening);
+    if (opening) syncPermission();
+  };
+
+  // Animate the panel open/closed, growing to fit the denial notice when location is denied.
+  useEffect(() => {
+    const target = searchVisible
+      ? ANIMATED_TOTAL_HEIGHT + (locationStatus === 'denied' ? DENIAL_ROW_HEIGHT : 0)
+      : 0;
     Animated.timing(animatedHeight, {
-      toValue: opening ? ANIMATED_TOTAL_HEIGHT : 0,
+      toValue: target,
       duration: 200,
       useNativeDriver: false,
     }).start();
-  };
+  }, [searchVisible, locationStatus, animatedHeight]);
 
   /** Opens the calendar picker to choose a single custom day. */
   const openDatePicker = () => {
@@ -314,16 +362,32 @@ export default function HomeScreen() {
                   nearestDisabled && styles.segmentDisabled,
                 ]}
                 onPress={handleNearestPress}
-                disabled={nearestDisabled}
+                disabled={nearestDisabled || nearestLoading}
               >
-                <Text
-                  style={[styles.segmentText, sortBy === 'nearest' && styles.segmentTextActive]}
-                >
-                  Nearest
-                </Text>
+                {nearestLoading ? (
+                  <ActivityIndicator size="small" color={sharedColors.white} />
+                ) : (
+                  <Text
+                    style={[styles.segmentText, sortBy === 'nearest' && styles.segmentTextActive]}
+                  >
+                    Nearest
+                  </Text>
+                )}
               </Pressable>
             </View>
           </View>
+
+          {/* Shown when location permission is denied — Nearest needs it */}
+          {locationStatus === 'denied' && (
+            <View style={styles.denialRow}>
+              <Text style={styles.denialText}>
+                Allow location access to sort by Nearest.{' '}
+                <Text style={styles.denialLink} onPress={() => Linking.openSettings()}>
+                  Open settings
+                </Text>
+              </Text>
+            </View>
+          )}
         </Animated.View>
       </View>
 
@@ -355,8 +419,8 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.listWrapper}>
-            {/* Small spinner while a filter refetch is in flight (list stays visible) */}
-            {isFetching && (
+            {/* Small spinner while a filter refetch is in flight (not during a manual pull) */}
+            {isFetching && !refreshing && (
               <View style={styles.fetchingOverlay} pointerEvents="none">
                 <View style={styles.fetchingBadge}>
                   <ActivityIndicator size="small" color={colors.accent} />
@@ -368,8 +432,8 @@ export default function HomeScreen() {
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
-              onRefresh={refetch}
-              refreshing={isLoading}
+              onRefresh={onRefresh}
+              refreshing={refreshing}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyText}>No events found</Text>
@@ -580,6 +644,20 @@ function createStyles(colors: ThemeColors) {
     segmentTextActive: {
       color: colors.header,
       fontWeight: '600',
+    },
+    denialRow: {
+      marginTop: 10,
+    },
+    denialText: {
+      fontSize: 12,
+      color: sharedColors.white,
+      opacity: 0.8,
+      lineHeight: 18,
+    },
+    denialLink: {
+      color: colors.accent,
+      fontWeight: '700',
+      opacity: 1,
     },
     activeFiltersRow: {
       flexDirection: 'row',

@@ -46,13 +46,16 @@ export function useEvents() {
       }
 
       if (date) {
+        // Intersected with the always-applied `date >= now` bound above, so "Today"
+        // shows only events later today while future days show the full local day.
         const { startIso, endIso } = dayRangeIso(date);
         query = query.gte('date', startIso).lt('date', endIso);
       }
 
       if (search) {
-        // Strip characters that would break PostgREST's or() filter grammar.
-        const term = search.replace(/[,()*%]/g, '');
+        // Strip characters that would break PostgREST's or() filter grammar
+        // (separators, wildcards, quotes). This is a contiguous substring match.
+        const term = search.replace(/[,()*%.:"\\]/g, '').trim();
         if (term) {
           query = query.or(
             `title.ilike.*${term}*,sport.ilike.*${term}*,location.ilike.*${term}*`

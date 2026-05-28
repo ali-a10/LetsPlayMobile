@@ -32,7 +32,13 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "LetsPlay uses your location to sort nearby events."
+        }
+      ]
     ]
   }
 }

@@ -11,6 +11,9 @@ export type UpdateEventPayload = {
   location: string;
   max_participants: number;
   price: number | null;
+  // Only included when the host picks a new place, so coordinates stay in sync with the address.
+  latitude?: number;
+  longitude?: number;
 };
 
 /** Updates an event row in Supabase and invalidates related caches on success. */
