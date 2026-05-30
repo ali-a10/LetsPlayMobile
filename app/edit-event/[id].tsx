@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { LocationAutocomplete, SelectedPlace } from '../../components/ui/LocationAutocomplete';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors } from '../../lib/constants/colors';
 import { useEventDetail } from '../../lib/hooks/useEventDetail';
@@ -42,7 +43,7 @@ export default function EditEventScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [location, setLocation] = useState('');
+  const [place, setPlace] = useState<SelectedPlace | null>(null);
   const [description, setDescription] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('10');
   const [price, setPrice] = useState('');
@@ -61,7 +62,13 @@ export default function EditEventScreen() {
     if (event && !initialized) {
       setTitle(event.title);
       setDate(new Date(event.date));
-      setLocation(event.location);
+      if (event.latitude != null && event.longitude != null) {
+        setPlace({
+          address: event.location,
+          latitude: event.latitude,
+          longitude: event.longitude,
+        });
+      }
       setDescription(event.description ?? '');
       setMaxParticipants(String(event.max_participants));
       if (event.is_paid && event.price != null) {
@@ -161,8 +168,8 @@ export default function EditEventScreen() {
       newErrors.date = 'Event must be in the future';
     }
 
-    if (!location.trim()) {
-      newErrors.location = 'Location is required';
+    if (!place) {
+      newErrors.location = 'Please select a location';
     }
 
     if (!maxParticipants.trim()) {
@@ -195,7 +202,9 @@ export default function EditEventScreen() {
     const payload: UpdateEventPayload = {
       title: title.trim(),
       date: date!.toISOString(),
-      location: location.trim(),
+      location: place!.address,
+      latitude: place!.latitude,
+      longitude: place!.longitude,
       description: description.trim() || null,
       max_participants: parseInt(maxParticipants, 10) || 10,
       price: event?.is_paid ? parseFloat(price) : null,
@@ -353,16 +362,14 @@ export default function EditEventScreen() {
             </View>
           )}
 
-          <Input
+          <LocationAutocomplete
             label="Location"
-            placeholder="e.g. Central Park Court 3"
-            value={location}
-            onChangeText={(text) => {
-              setLocation(text);
+            initialAddress={event.location}
+            error={errors.location}
+            onSelect={(selected) => {
+              setPlace(selected);
               if (errors.location) setErrors(prev => ({ ...prev, location: undefined }));
             }}
-            maxLength={100}
-            error={errors.location}
           />
 
           <Input
