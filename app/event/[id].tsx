@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
 import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
+import { shareEvent } from '../../lib/utils/shareEvent';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -160,6 +161,15 @@ export default function EventDetailScreen() {
             <Ionicons name="arrow-back" size={22} color={sharedColors.white} />
           </Pressable>
 
+          <Pressable
+            style={styles.shareBtn}
+            onPress={() => shareEvent(event)}
+            accessibilityLabel="Share event"
+            accessibilityRole="button"
+          >
+            <Ionicons name="share-outline" size={18} color={sharedColors.white} />
+            <Text style={styles.shareBtnText}>Share</Text>
+          </Pressable>
         </View>
 
         <View style={styles.headerContent}>
@@ -379,6 +389,19 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 10,
       paddingRight: 16,
       alignSelf: 'flex-start',
+    },
+    shareBtn: {
+      paddingVertical: 10,
+      paddingLeft: 16,
+      alignSelf: 'flex-end',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    shareBtnText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: sharedColors.white,
     },
     editBtn: {
       paddingVertical: 10,
