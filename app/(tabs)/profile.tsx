@@ -94,7 +94,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Social</Text>
         <MenuItem colors={colors} icon="people-outline" label="Invite Friends" />
-        <MenuItem colors={colors} icon="chatbubble-outline" label="Send Us Feedback" />
+        <MenuItem colors={colors} icon="chatbubble-outline" label="Send Us Feedback" onPress={() => router.push('/feedback')} />
       </View>
 
       {/* Support & Legal Section */}

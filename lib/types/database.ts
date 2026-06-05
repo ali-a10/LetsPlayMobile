@@ -213,6 +213,47 @@ export type Database = {
           },
         ];
       };
+      feedback: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          category: FeedbackCategory;
+          message: string;
+          status: FeedbackStatus;
+          app_version: string | null;
+          platform: 'ios' | 'android' | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          category: FeedbackCategory;
+          message: string;
+          status?: FeedbackStatus;
+          app_version?: string | null;
+          platform?: 'ios' | 'android' | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          category?: FeedbackCategory;
+          message?: string;
+          status?: FeedbackStatus;
+          app_version?: string | null;
+          platform?: 'ios' | 'android' | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'feedback_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {
@@ -232,6 +273,8 @@ export type Database = {
     Enums: {
       report_reason: ReportReason;
       report_status: ReportStatus;
+      feedback_category: FeedbackCategory;
+      feedback_status: FeedbackStatus;
     };
     CompositeTypes: {};
   };
@@ -246,8 +289,13 @@ export type ReportReason =
 
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 
+export type FeedbackCategory = 'bug' | 'suggestion' | 'other';
+
+export type FeedbackStatus = 'new' | 'triaged' | 'resolved' | 'wontfix';
+
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Event = Database['public']['Tables']['events']['Row'];
 export type Participant = Database['public']['Tables']['participants']['Row'];
 export type Block = Database['public']['Tables']['blocks']['Row'];
 export type Report = Database['public']['Tables']['reports']['Row'];
+export type Feedback = Database['public']['Tables']['feedback']['Row'];
