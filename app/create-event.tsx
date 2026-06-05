@@ -385,12 +385,14 @@ export default function CreateEventScreen() {
                 title="Done"
                 variant="outline"
                 onPress={() => {
-                  if (activePicker === 'date' && pendingDateRef.current) {
-                    setDate(pendingDateRef.current);
+                  // Fall back to the picker's displayed value when the user taps Done
+                  // without scrolling (no onChange fires, so the pending ref is still null).
+                  if (activePicker === 'date') {
+                    setDate(pendingDateRef.current ?? date ?? new Date());
                     if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
                     pendingDateRef.current = null;
-                  } else if (activePicker === 'time' && pendingTimeRef.current) {
-                    setTime(pendingTimeRef.current);
+                  } else if (activePicker === 'time') {
+                    setTime(pendingTimeRef.current ?? time ?? new Date());
                     if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
                     pendingTimeRef.current = null;
                   }
@@ -538,7 +540,7 @@ function createStyles(colors: ThemeColors) {
       color: colors.text,
     },
     dateButtonPlaceholder: {
-      color: colors.textMuted,
+      color: colors.inputPlaceholder,
     },
     errorText: {
       fontSize: 12,
