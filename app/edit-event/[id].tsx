@@ -45,7 +45,6 @@ export default function EditEventScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [place, setPlace] = useState<SelectedPlace | null>(null);
   const [description, setDescription] = useState('');
-  const [maxParticipants, setMaxParticipants] = useState('10');
   const [price, setPrice] = useState('');
 
   // Validation errors
@@ -53,7 +52,6 @@ export default function EditEventScreen() {
     title?: string;
     date?: string;
     location?: string;
-    maxParticipants?: string;
     price?: string;
   }>({});
 
@@ -70,7 +68,6 @@ export default function EditEventScreen() {
         });
       }
       setDescription(event.description ?? '');
-      setMaxParticipants(String(event.max_participants));
       if (event.is_paid && event.price != null) {
         setPrice(event.price.toFixed(2));
       }
@@ -101,18 +98,6 @@ export default function EditEventScreen() {
       setPrice(num.toFixed(2));
     } else if (price.endsWith('.')) {
       setPrice(price.slice(0, -1));
-    }
-  }
-
-  /** Strips non-digit characters and shows an inline error if out of range. */
-  function handleMaxParticipantsChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, '');
-    setMaxParticipants(cleaned);
-    const num = parseInt(cleaned, 10);
-    if (cleaned && (num < 2 || num > 100)) {
-      setErrors(prev => ({ ...prev, maxParticipants: 'Must be between 2 and 100' }));
-    } else {
-      setErrors(prev => ({ ...prev, maxParticipants: undefined }));
     }
   }
 
@@ -172,15 +157,6 @@ export default function EditEventScreen() {
       newErrors.location = 'Please select a location';
     }
 
-    if (!maxParticipants.trim()) {
-      newErrors.maxParticipants = 'Max participants is required';
-    } else {
-      const parsedMax = parseInt(maxParticipants, 10);
-      if (isNaN(parsedMax) || parsedMax < 2 || parsedMax > 100) {
-        newErrors.maxParticipants = 'Must be between 2 and 100';
-      }
-    }
-
     if (event?.is_paid) {
       const parsedPrice = parseFloat(price);
       if (!price.trim() || isNaN(parsedPrice) || parsedPrice <= 0) {
@@ -206,7 +182,6 @@ export default function EditEventScreen() {
       latitude: place!.latitude,
       longitude: place!.longitude,
       description: description.trim() || null,
-      max_participants: parseInt(maxParticipants, 10) || 10,
       price: event?.is_paid ? parseFloat(price) : null,
     };
 
@@ -383,16 +358,13 @@ export default function EditEventScreen() {
             style={styles.textArea}
           />
 
+          {/* Max participants is fixed after creation */}
           <View style={styles.fieldContainer}>
-            <Input
-              label="Max Participants"
-              placeholder="10"
-              value={maxParticipants}
-              onChangeText={handleMaxParticipantsChange}
-              keyboardType="number-pad"
-              error={errors.maxParticipants}
-            />
-            <Text style={styles.hintText}>Max 100 participants</Text>
+            <Text style={styles.label}>Max Participants</Text>
+            <View style={styles.readOnlyField}>
+              <Text style={styles.readOnlyText}>{event.max_participants}</Text>
+            </View>
+            <Text style={styles.hintText}>Participant limit can't be changed after creation</Text>
           </View>
 
           {/* Price field — only shown for paid events */}
@@ -523,7 +495,7 @@ function createStyles(colors: ThemeColors) {
     hintText: {
       fontSize: 12,
       color: colors.textMuted,
-      marginTop: -12,
+      marginTop: 4,
     },
     submitButton: {
       marginTop: 24,

@@ -9,7 +9,6 @@ export type UpdateEventPayload = {
   description: string | null;
   date: string;
   location: string;
-  max_participants: number;
   price: number | null;
   // Only included when the host picks a new place, so coordinates stay in sync with the address.
   latitude?: number;
