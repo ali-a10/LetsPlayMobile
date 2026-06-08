@@ -1,33 +1,45 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Platform,
   TouchableOpacity,
+  Pressable,
   Alert,
-  Keyboard,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { LocationAutocomplete, SelectedPlace } from '../../components/ui/LocationAutocomplete';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
-import { ThemeColors } from '../../lib/constants/colors';
+import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { useEventDetail } from '../../lib/hooks/useEventDetail';
-import { useUpdateEvent, UpdateEventPayload } from '../../lib/hooks/useUpdateEvent';
+import { useUpdateEvent } from '../../lib/hooks/useUpdateEvent';
 import { getSportLabel } from '../../lib/utils/sports';
 
-/** Screen for editing an existing event, pre-filled with current event data. */
+/** Formats a Date as a human-readable date string ("Sat, Jun 14, 2026"). */
+function formatDisplayDate(d: Date): string {
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/** Formats a Date as a human-readable time string ("7:45 PM"). */
+function formatDisplayTime(d: Date): string {
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+/** Screen for editing an existing event — only title and description are editable; everything else is shown read-only. */
 export default function EditEventScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: event, isLoading: eventLoading } = useEventDetail(id!);
+  const { data: event, isLoading: eventLoading, error: eventError } = useEventDetail(id!);
   const updateMutation = useUpdateEvent(id!);
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -38,134 +50,59 @@ export default function EditEventScreen() {
   // Synchronous guard to prevent double submission
   const submittingRef = useRef(false);
 
-  // Form state
+  // Editable form state
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [place, setPlace] = useState<SelectedPlace | null>(null);
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
 
   // Validation errors
-  const [errors, setErrors] = useState<{
-    title?: string;
-    date?: string;
-    location?: string;
-    price?: string;
-  }>({});
+  const [errors, setErrors] = useState<{ title?: string }>({});
 
-  // Pre-fill form when event data loads (only once)
+  // Hide the sticky Save bar while the keyboard is open — the user explicitly didn't want it
+  // floating above the keyboard.
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  /** Seeds the editable fields from the loaded event once, matching the edit-profile pattern. */
   useEffect(() => {
     if (event && !initialized) {
       setTitle(event.title);
-      setDate(new Date(event.date));
-      if (event.latitude != null && event.longitude != null) {
-        setPlace({
-          address: event.location,
-          latitude: event.latitude,
-          longitude: event.longitude,
-        });
-      }
       setDescription(event.description ?? '');
-      if (event.is_paid && event.price != null) {
-        setPrice(event.price.toFixed(2));
-      }
       setInitialized(true);
     }
   }, [event, initialized]);
 
-  /** Strips invalid characters from price input, keeping digits, one dot, and max 2 decimal places. */
-  function handlePriceChange(text: string) {
-    let cleaned = text.replace(/[^0-9.]/g, '');
-    const dotIndex = cleaned.indexOf('.');
-    if (dotIndex !== -1) {
-      cleaned = cleaned.slice(0, dotIndex + 1) + cleaned.slice(dotIndex + 1).replace(/\./g, '');
+  /** Bounces non-hosts back so the edit form isn't visible to anyone else. */
+  useEffect(() => {
+    if (!event) return;
+    if (!event.isUserHost) {
+      Alert.alert('Not allowed', 'Only the host can edit this event.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     }
-    const parts = cleaned.split('.');
-    if (parts[1]?.length > 2) {
-      cleaned = parts[0] + '.' + parts[1].slice(0, 2);
+  }, [event, router]);
+
+  /** Bounces back if the underlying event fetch fails. */
+  useEffect(() => {
+    if (eventError) {
+      Alert.alert('Error', 'Could not load this event.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     }
-    setPrice(cleaned);
-    if (errors.price) setErrors(prev => ({ ...prev, price: undefined }));
-  }
+  }, [eventError, router]);
 
-  /** Normalizes the price to 2 decimal places when the user leaves the field. */
-  function handlePriceBlur() {
-    if (!price) return;
-    const num = parseFloat(price);
-    if (!isNaN(num) && num > 0) {
-      setPrice(num.toFixed(2));
-    } else if (price.endsWith('.')) {
-      setPrice(price.slice(0, -1));
-    }
-  }
-
-  /** Formats a Date for user-friendly display. */
-  function formatDisplayDateTime(d: Date): string {
-    return d.toLocaleString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  }
-
-  /** Handles the date portion selection from the native picker. */
-  function handleDateChange(_event: any, selectedDate?: Date) {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const existing = date || new Date();
-      selectedDate.setHours(existing.getHours(), existing.getMinutes());
-      setDate(selectedDate);
-      if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
-
-      // On Android, chain to the time picker after date selection
-      if (Platform.OS === 'android') {
-        setTimeout(() => setShowTimePicker(true), 300);
-      }
-    }
-  }
-
-  /** Handles the time portion selection from the native picker. */
-  function handleTimeChange(_event: any, selectedTime?: Date) {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedTime && date) {
-      const updated = new Date(date);
-      updated.setHours(selectedTime.getHours(), selectedTime.getMinutes());
-      setDate(updated);
-    }
-  }
-
-  /** Validates all required fields and sets error messages. */
+  /** Validates the title field; returns true when the form is safe to submit. */
   function validate(): boolean {
-    const newErrors: typeof errors = {};
-
-    if (!title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
-    if (!date) {
-      newErrors.date = 'Date and time are required';
-    } else if (date <= new Date()) {
-      newErrors.date = 'Event must be in the future';
-    }
-
-    if (!place) {
-      newErrors.location = 'Please select a location';
-    }
-
-    if (event?.is_paid) {
-      const parsedPrice = parseFloat(price);
-      if (!price.trim() || isNaN(parsedPrice) || parsedPrice <= 0) {
-        newErrors.price = 'Enter a valid price';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const next: { title?: string } = {};
+    if (!title.trim()) next.title = 'Title is required';
+    setErrors(next);
+    return Object.keys(next).length === 0;
   }
 
   /** Validates the form, updates the event via mutation, and navigates back on success. */
@@ -175,18 +112,11 @@ export default function EditEventScreen() {
 
     submittingRef.current = true;
 
-    const payload: UpdateEventPayload = {
-      title: title.trim(),
-      date: date!.toISOString(),
-      location: place!.address,
-      latitude: place!.latitude,
-      longitude: place!.longitude,
-      description: description.trim() || null,
-      price: event?.is_paid ? parseFloat(price) : null,
-    };
-
     try {
-      await updateMutation.mutateAsync(payload);
+      await updateMutation.mutateAsync({
+        title: title.trim(),
+        description: description.trim() || null,
+      });
       Alert.alert('Success', 'Your event has been updated!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -218,6 +148,13 @@ export default function EditEventScreen() {
     );
   }
 
+  const eventDate = new Date(event.date);
+  const priceLabel = event.is_paid && event.price ? `$${event.price.toFixed(2)}` : 'Free';
+
+  const dirty =
+    title.trim() !== event.title ||
+    (description.trim() || null) !== (event.description ?? null);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Fixed back button header */}
@@ -232,119 +169,30 @@ export default function EditEventScreen() {
         </TouchableOpacity>
       </View>
 
-    <KeyboardAwareScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-      enableOnAndroid
-      extraScrollHeight={20}
-    >
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={20}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Edit Event</Text>
           <Text style={styles.subtitle}>Update your event details</Text>
         </View>
 
         <View style={styles.form}>
+          {/* Editable fields */}
           <Input
             label="Title"
             placeholder="e.g. Saturday Morning Basketball"
             value={title}
             onChangeText={(text) => {
               setTitle(text);
-              if (errors.title) setErrors(prev => ({ ...prev, title: undefined }));
+              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
             }}
             maxLength={100}
             error={errors.title}
-          />
-
-          {/* Sport field (read-only) */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Sport</Text>
-            <View style={styles.readOnlyField}>
-              <Text style={styles.readOnlyText}>{getSportLabel(event.sport)}</Text>
-            </View>
-          </View>
-
-          {/* Date & Time picker */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Date & Time</Text>
-            <TouchableOpacity
-              style={[
-                styles.dateButton,
-                errors.date && styles.dateButtonError,
-              ]}
-              onPress={() => {
-                Keyboard.dismiss();
-                setShowDatePicker(true);
-              }}
-            >
-              <Text
-                style={[
-                  styles.dateButtonText,
-                  !date && styles.dateButtonPlaceholder,
-                ]}
-              >
-                {date ? formatDisplayDateTime(date) : 'Select date and time'}
-              </Text>
-            </TouchableOpacity>
-            {errors.date && (
-              <Text style={styles.errorText}>{errors.date}</Text>
-            )}
-          </View>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={date || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-            />
-          )}
-
-          {showTimePicker && (
-            <DateTimePicker
-              value={date || new Date()}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleTimeChange}
-            />
-          )}
-
-          {/* iOS picker dismiss buttons */}
-          {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
-            <View style={styles.pickerActions}>
-              {showDatePicker && (
-                <Button
-                  title="Pick Time"
-                  variant="outline"
-                  onPress={() => {
-                    setShowDatePicker(false);
-                    setShowTimePicker(true);
-                  }}
-                  style={styles.pickerButton}
-                />
-              )}
-              <Button
-                title="Done"
-                variant="outline"
-                onPress={() => {
-                  setShowDatePicker(false);
-                  setShowTimePicker(false);
-                }}
-                style={styles.pickerButton}
-              />
-            </View>
-          )}
-
-          <LocationAutocomplete
-            label="Location"
-            initialAddress={event.location}
-            error={errors.location}
-            onSelect={(selected) => {
-              setPlace(selected);
-              if (errors.location) setErrors(prev => ({ ...prev, location: undefined }));
-            }}
           />
 
           <Input
@@ -358,37 +206,69 @@ export default function EditEventScreen() {
             style={styles.textArea}
           />
 
-          {/* Max participants is fixed after creation */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Max Participants</Text>
-            <View style={styles.readOnlyField}>
-              <Text style={styles.readOnlyText}>{event.max_participants}</Text>
-            </View>
-            <Text style={styles.hintText}>Participant limit can't be changed after creation</Text>
-          </View>
-
-          {/* Price field — only shown for paid events */}
-          {event.is_paid && (
-            <Input
-              label="Price ($)"
-              placeholder="0.00"
-              value={price}
-              onChangeText={handlePriceChange}
-              onBlur={handlePriceBlur}
-              keyboardType="decimal-pad"
-              error={errors.price}
-            />
-          )}
-
-          <Button
-            title="Save Changes"
-            onPress={handleSave}
-            loading={updateMutation.isPending}
-            style={styles.submitButton}
+          {/* Read-only fields — locked for now; will be openable in a later milestone */}
+          <ReadOnlyField label="Sport" value={getSportLabel(event.sport)} colors={colors} />
+          <ReadOnlyField label="Date" value={formatDisplayDate(eventDate)} colors={colors} />
+          <ReadOnlyField label="Time" value={formatDisplayTime(eventDate)} colors={colors} />
+          <ReadOnlyField label="Location" value={event.location} colors={colors} />
+          <ReadOnlyField
+            label="Max Participants"
+            value={String(event.max_participants)}
+            colors={colors}
           />
+          <ReadOnlyField label="Price" value={priceLabel} colors={colors} />
         </View>
-    </KeyboardAwareScrollView>
+      </KeyboardAwareScrollView>
+
+      {/* Sticky bottom bar — copies the join/leave/edit CTA from app/event/[id].tsx.
+          Hidden while the keyboard is open so it doesn't float above it. */}
+      {!keyboardVisible && (
+        <View style={styles.stickyBar}>
+          <Pressable
+            style={dirty ? styles.saveBtn : styles.saveBtnDisabled}
+            onPress={handleSave}
+            disabled={!dirty || updateMutation.isPending}
+          >
+            {updateMutation.isPending ? (
+              <ActivityIndicator color={sharedColors.white} />
+            ) : (
+              <Text style={dirty ? styles.saveBtnText : styles.saveBtnDisabledText}>
+                Save Changes
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
+  );
+}
+
+/** Renders a labeled, non-editable field styled like the editable Inputs but visually muted with a lock icon. */
+function ReadOnlyField({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: ThemeColors;
+}) {
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.fieldContainer}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.readOnlyField}>
+        <Text style={styles.readOnlyText} numberOfLines={2}>
+          {value}
+        </Text>
+        <Ionicons
+          name="lock-closed-outline"
+          size={14}
+          color={colors.textMuted}
+          style={styles.readOnlyIcon}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -418,6 +298,7 @@ function createStyles(colors: ThemeColors) {
     scrollContent: {
       flexGrow: 1,
       padding: 24,
+      paddingBottom: 24,
     },
     header: {
       alignItems: 'center',
@@ -451,55 +332,54 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 8,
       padding: 14,
       backgroundColor: colors.background,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      opacity: 0.7,
     },
     readOnlyText: {
+      flex: 1,
       fontSize: 16,
       color: colors.textMuted,
     },
-    dateButton: {
-      borderWidth: 1,
-      borderColor: colors.inputBorder,
-      borderRadius: 8,
-      padding: 14,
-      backgroundColor: colors.background,
-    },
-    dateButtonError: {
-      borderColor: colors.error,
-    },
-    dateButtonText: {
-      fontSize: 16,
-      color: colors.text,
-    },
-    dateButtonPlaceholder: {
-      color: colors.textMuted,
-    },
-    errorText: {
-      fontSize: 12,
-      color: colors.error,
-      marginTop: 4,
+    readOnlyIcon: {
+      marginLeft: 8,
     },
     textArea: {
       height: 100,
       textAlignVertical: 'top',
     },
-    pickerActions: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      gap: 8,
-      marginBottom: 16,
-    },
-    pickerButton: {
-      height: 36,
+    // Sticky CTA bar — values copied verbatim from app/event/[id].tsx so the two screens match.
+    stickyBar: {
       paddingHorizontal: 16,
+      paddingTop: 10,
+      paddingBottom: 38,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+      backgroundColor: colors.card,
     },
-    hintText: {
-      fontSize: 12,
+    saveBtn: {
+      backgroundColor: colors.buttonPrimaryBg,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    saveBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: sharedColors.white,
+    },
+    saveBtnDisabled: {
+      backgroundColor: colors.cardBorder,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    saveBtnDisabledText: {
+      fontSize: 16,
+      fontWeight: '700',
       color: colors.textMuted,
-      marginTop: 4,
-    },
-    submitButton: {
-      marginTop: 24,
-      marginBottom: 40,
     },
   });
 }
