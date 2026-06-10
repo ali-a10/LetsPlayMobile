@@ -285,6 +285,7 @@ export type ReportReason =
   | 'inappropriate'
   | 'fake_profile'
   | 'spam'
+  | 'host_no_show'
   | 'other';
 
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';

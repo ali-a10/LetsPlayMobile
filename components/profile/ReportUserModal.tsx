@@ -22,6 +22,7 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
   { value: 'inappropriate', label: 'Inappropriate behavior' },
   { value: 'fake_profile', label: 'Fake profile' },
   { value: 'spam', label: 'Spam' },
+  { value: 'host_no_show', label: 'Host no-show' },
   { value: 'other', label: 'Other' },
 ];
 
