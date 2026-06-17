@@ -11,6 +11,12 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'P0004') {
     return 'You are not a participant of this event.';
   }
+  if (error.code === 'P0005') {
+    return "You can't cancel your spot within 12 hours of the event start.";
+  }
+  if (error.code === 'P0006') {
+    return "As the host, you can't leave your own event — cancel the event instead.";
+  }
   if (msg.includes('jwt') || msg.includes('token')) {
     return 'Your session has expired. Please log in again.';
   }

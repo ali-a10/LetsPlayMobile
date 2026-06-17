@@ -13,6 +13,7 @@ import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
+import { isWithinLeaveCutoff } from '../../lib/utils/eventTiming';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -103,6 +104,7 @@ export default function EventDetailScreen() {
   }
 
   const sportColor = getSportColor(event.sport);
+  const within12h = isWithinLeaveCutoff(event.date);
   const spotsLeft = event.max_participants - event.current_participants;
   const isFree = !event.is_paid || !event.price;
   const hostName = event.profiles
@@ -124,6 +126,18 @@ export default function EventDetailScreen() {
       );
     }
     if (event.isUserJoined) {
+      if (within12h) {
+        return (
+          <View>
+            <Pressable style={[styles.leaveBtn, styles.leaveBtnDisabled]} disabled>
+              <Text style={styles.leaveBtnText}>Leave Event</Text>
+            </Pressable>
+            <Text style={styles.ctaHelperText}>
+              Spots can't be cancelled within 12 hours of the event start.
+            </Text>
+          </View>
+        );
+      }
       return (
         <Pressable
           style={styles.leaveBtn}
@@ -325,7 +339,11 @@ export default function EventDetailScreen() {
         onConfirm={handleConfirm}
         onCancel={handleCancel}
         title="Join Event?"
-        body="Are you sure you want to join this event?"
+        body={
+          within12h
+            ? "Are you sure you want to join this event? You won't be able to cancel this spot — it starts within 12 hours."
+            : 'Are you sure you want to join this event?'
+        }
         confirmLabel="Confirm"
         confirmColor={colors.header}
       />
@@ -656,6 +674,15 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
       fontWeight: '700',
       color: sharedColors.white,
+    },
+    leaveBtnDisabled: {
+      opacity: 0.5,
+    },
+    ctaHelperText: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: 8,
     },
     fullBtn: {
       backgroundColor: colors.cardBorder,
