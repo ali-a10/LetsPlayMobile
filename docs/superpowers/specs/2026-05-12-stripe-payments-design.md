@@ -96,6 +96,8 @@ ALTER TABLE profiles
 
 `stripe_payouts_enabled` mirrors Stripe's `charges_enabled && payouts_enabled` flag — gates the "create paid event" button.
 
+> **CORRECTION:** see §5.3 — this formula holds only while the `card_payments` capability stays active; otherwise gate on `payouts_enabled` + `transfers` capability instead.
+
 ### 4.2 New table `payments`
 
 ```sql
@@ -297,9 +299,12 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 1. Host taps "Create paid event" or visits Profile → "Payouts".
 2. If `stripe_payouts_enabled = false`: show a "Set up payouts" screen with a CTA button.
 3. Tapping the CTA calls `create-connect-account` first if `profiles.stripe_account_id` is null (to create the Stripe account shell), then calls `create-connect-account-link` and opens the returned URL in an in-app browser (`expo-web-browser`).
+   - **CORRECTION:** opened with `expo-web-browser`'s `openBrowserAsync` (a plain in-app browser the user closes manually), not the auto-closing `openAuthSessionAsync` — see step 6 for why.
 4. Host completes Stripe-hosted onboarding (identity, business info, bank account, SIN).
 5. Stripe redirects back to a deep link (`letsplay://payouts-complete`).
+   - **CORRECTION:** Stripe redirects to an **https** return URL (`https://letsplayapp.ca/payouts-complete`), not a custom scheme. Stripe rejects `letsplay://` ("not a valid URL"), so the return URL must be http(s).
 6. On returning to the app via deep link, refetch the profile (TanStack Query invalidate on `profile` key). The `account.updated` webhook (see §5.3) will have flipped `stripe_payouts_enabled` before the user lands back; if there's a race (webhook lands milliseconds late), the profile screen shows a "Verifying…" state and **polls via TanStack Query's `refetchInterval`** on `['profile', userId]` (every ~2s, stop once `stripe_payouts_enabled` flips true or after a ~10s cap) — preferred over a hand-rolled `useEffect` loop: less custom code, automatic cleanup, same effect.
+   - **CORRECTION:** because Stripe returns to an https page (not a custom scheme), there is **no automatic deep-link return** in Expo Go: the user closes the in-app browser manually, and the Payouts screen refetches profile / `['payouts', userId]`. The "Verifying…" poll (~2s, ~10s cap) still covers webhook lag. A *seamless* auto-return (browser self-closes and lands the user back on the screen) requires **Universal Links / App Links** on `letsplayapp.ca` plus an EAS dev build — deferred to Phase B/polish.
 
 ### 5.2 Edge Functions
 
@@ -307,6 +312,7 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 <!-- Ali: stripe requires a fresh URL. this will be loaded in the same browser as the previous function, then after this is done (or the user backs out), the user returns to the app
 - if the user backs out, we wont need to call create-connect-account, only create-connect-account-link -->
 - **`create-connect-account-link`**: creates a Stripe AccountLink with `type='account_onboarding'`, refresh + return URLs to deep links. Returns the URL.
+  - **CORRECTION:** `refresh_url` + `return_url` must be **https** (`https://letsplayapp.ca/payouts-complete`), not deep links — Stripe rejects custom app schemes (`letsplay://`) with "not a valid URL".
 - **`NOTE:`** i have comments in the .md file that don't show in the preview 
 - **`ANOTHER NOTE:`** to access the claude chat where i asked about this doc, type /resume and select 'Understand stripe payment design file'
 
@@ -314,6 +320,7 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 ### 5.3 Webhook: `account.updated`
 
 When fired, fetch the account, update `stripe_onboarding_complete` (details_submitted) and `stripe_payouts_enabled` (charges_enabled && payouts_enabled) on the profile. SEE section 9 for more details on the webhook
+- **CORRECTION:** the `charges_enabled && payouts_enabled` formula only works because we request the `card_payments` capability (§5.2) and it activates on full verification. Hosts never charge cards (separate charges & transfers), so `charges_enabled` isn't truly required for them — if `card_payments` ever stops activating, this formula would stay false forever and lock out valid hosts. If that happens, switch the gate to `payouts_enabled && capabilities.transfers === 'active'`.
 - **`NOTE:`** i have comments in the .md file that don't show in the preview 
 <!-- ALI- what is a webhook: it's a way for one system (stripe in this case) to tell your server "hey, something happened" without your server having to keep asking. so in this case, i give stripe a URL ("when something happens, POST to this URL"). Then Stripe calls you (sends a POST event w/ data) the moment it happens -->
 
@@ -703,6 +710,11 @@ Each phase is independently testable and shippable behind a feature flag (`paid_
 - **Phase C — Refunds** (participant cancel + host cancel event).
 - **Phase D — Delayed payouts** (pg_cron + process-payouts function).
 - **Phase E — Polish** (payouts screen, payment history, receipts).
+  - **"How paid events work" in-app explainer.** A single scrollable screen of **collapsible sections** (collapsed by default, expand-on-tap — *not* a swipe carousel like `how-it-works.tsx`, so every topic is visible at a glance and the page works as jump-to reference, not linear onboarding). Sections, sourced from `cancellationAndRefund.md` + the §2 fee model: fees & what the host keeps, participant refund rules (12h cutoff, processing fees non-refundable), host cancellation / late-cancellation tracking, no-shows, payout timing (~24h after the event). Plain-language first, exact numbers second; "last updated" date shown.
+  - **Entry points:** the Phase A payouts screen ("Learn more about payouts" link), the create-event paid section, and the currently-dormant Profile menu items (Cancellation Policy / Help / Terms) all route here.
+  - **Hybrid with the web:** the in-app page ends with a "View full terms" link out to the web-hosted Terms / Cancellation Policy on `letsplayapp.ca` — the in-app page covers the friendly educational summary (rarely changes), the web holds the formal, freely-updatable legal docs (the web docs themselves remain the separate §12.3 go-live track).
+  - **Why Phase E, not earlier:** the page documents the full money loop (fees, refunds, cancellations, payouts), whose behavior only fully exists once B/C/D ship. Writing it here means every rule it states is already shipped and testable, avoiding doc drift; and since the feature stays flag-off until B+C+D land (§12.3), no user ever hits a missing link in the meantime.
+  - **Payout-status confirmation UX (post-launch, low priority).** After onboarding, the Payouts screen shows a "Verifying… this might take a minute" state that polls (~60s cap) for the `account.updated` webhook to flip `stripe_payouts_enabled`. This can still lose a race if the webhook is slow, and isn't seamless. A more robust fix: an **active status fetch on return** — when the in-app browser closes, call an Edge Function that runs `stripe.accounts.retrieve()` and updates the flag immediately (reads Stripe's source directly instead of waiting for the webhook notification; the webhook stays as the safety net for later changes). Optionally pair with Universal/App Links for a smooth auto-return. **We might want to change this, but it isn't urgent — the current poll is acceptable for launch; revisit after.**
 
 ---
 
