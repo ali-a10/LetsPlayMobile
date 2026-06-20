@@ -14,6 +14,10 @@ export type Database = {
           about_me: string | null;
           avatar_url: string | null;
           created_at: string;
+          stripe_account_id: string | null;
+          stripe_onboarding_complete: boolean;
+          stripe_payouts_enabled: boolean;
+          stripe_customer_id: string | null;
         };
         Insert: {
           id: string;
@@ -27,6 +31,10 @@ export type Database = {
           about_me?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          stripe_account_id?: string | null;
+          stripe_onboarding_complete?: boolean;
+          stripe_payouts_enabled?: boolean;
+          stripe_customer_id?: string | null;
         };
         Update: {
           id?: string;
@@ -40,6 +48,10 @@ export type Database = {
           about_me?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          stripe_account_id?: string | null;
+          stripe_onboarding_complete?: boolean;
+          stripe_payouts_enabled?: boolean;
+          stripe_customer_id?: string | null;
         };
         Relationships: [];
       };

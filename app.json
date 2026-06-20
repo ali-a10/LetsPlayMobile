@@ -38,7 +38,8 @@
         {
           "locationWhenInUsePermission": "LetsPlay uses your location to sort nearby events."
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

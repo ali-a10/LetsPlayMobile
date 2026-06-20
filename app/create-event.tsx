@@ -24,6 +24,8 @@ import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { SPORT_OPTIONS } from '../lib/constants/sports';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/hooks/useAuth';
+import { usePayoutStatus } from '../lib/hooks/useStripePayouts';
+import { PAID_EVENTS_ENABLED } from '../lib/constants/featureFlags';
 import { friendlyErrorMessage } from '../lib/utils/errors';
 
 /** Screen for creating a new sports event. */
@@ -34,6 +36,10 @@ export default function CreateEventScreen() {
   const queryClient = useQueryClient();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  // Only query payout status while the payments feature is on; gate the paid toggle behind it.
+  const { data: payoutStatus } = usePayoutStatus(PAID_EVENTS_ENABLED ? user?.id : undefined);
+  const paidGated = PAID_EVENTS_ENABLED && !(payoutStatus?.payoutsEnabled ?? false);
 
   // Synchronous guard to prevent double submission
   const submittingRef = useRef(false);
@@ -441,10 +447,23 @@ export default function CreateEventScreen() {
             <Switch
               value={isPaid}
               onValueChange={setIsPaid}
+              disabled={paidGated}
               trackColor={{ false: colors.inputBorder, true: colors.accent }}
               thumbColor={isPaid ? colors.header : colors.chevron}
             />
           </View>
+
+          {paidGated && (
+            <TouchableOpacity
+              style={styles.payoutBanner}
+              onPress={() => router.push('/payouts')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="information-circle-outline" size={20} color={colors.header} />
+              <Text style={styles.payoutBannerText}>Set up payouts to create paid events.</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.header} />
+            </TouchableOpacity>
+          )}
 
           {isPaid && (
             <Input
@@ -562,6 +581,21 @@ function createStyles(colors: ThemeColors) {
       fontSize: 14,
       fontWeight: '500',
       color: colors.text,
+    },
+    payoutBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 16,
+    },
+    payoutBannerText: {
+      flex: 1,
+      fontSize: 13,
+      color: colors.text,
+      fontWeight: '500',
     },
     pickerActions: {
       flexDirection: 'row',

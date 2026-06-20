@@ -17,6 +17,7 @@ import { useProfile } from '../../lib/hooks/useProfile';
 import { useUserStats } from '../../lib/hooks/useUserStats';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
+import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 
 /** Displays the user's profile with stats, account settings, and activity links. */
 export default function ProfileScreen() {
@@ -87,6 +88,9 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Account</Text>
         <MenuItem colors={colors} icon="create-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
         {/* <MenuItem colors={colors} icon="mail-outline" label="Email Preferences" /> */}
+        {PAID_EVENTS_ENABLED && (
+          <MenuItem colors={colors} icon="cash-outline" label="Payouts" onPress={() => router.push('/payouts')} />
+        )}
         <MenuItem colors={colors} icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
       </View>
 
