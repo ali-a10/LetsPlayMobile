@@ -436,6 +436,7 @@ Mark the `payments` row `failed`, store `failed_reason`. No participant row was 
 ### 6.6 Race & edge cases
 
 - **Event fills during checkout**: `confirm-payment-join` runs the capacity check again; if full, refund immediately (full refund — platform eats the $0.30 Stripe flat fee per §1).
+  - **CORRECTION (phasing):** the *refund* here (and the equivalent cancelled-mid-checkout refund in §6.2) is **implemented in Phase C, not Phase B.** Phase B detects "full"/"cancelled" and does not seat the user, but leaves the payment `succeeded`; Phase C fires the actual refund. Safe because the app stays unpublished until all phases are tested (§11 launch gate).
 - **User leaves Payment Sheet without paying**: the PI stays in `requires_payment_method` **indefinitely** — unconfirmed PaymentIntents do *not* auto-expire (that's Checkout Sessions; the ~7-day expiry is for authorized holds). The `payments` row stays `pending`, and since `pending` counts as active in the partial unique index (§4.2), a naive re-join attempt would hit a unique violation and lock the user out of the event forever. Handled by the pending-row lookup in `create-payment-intent` (§6.2): the retry reuses the same PI instead of inserting a new row.
 - **Duplicate join attempts**: partial unique index on `payments` prevents two `pending`/`succeeded` rows for the same `(event_id, user_id)`.
 
@@ -708,12 +709,14 @@ Matches the repo's existing conventions (the project uses **`app.json`**, not `a
 
 ## 11. Implementation Phases
 
+> **Launch gate: the app does not go live until every phase (0 + A–E) of this spec is implemented and thoroughly tested.** There are no real users until then — the app stays unpublished through the entire payments build, so test-mode-only phases can ship incrementally without exposing incomplete money flows to anyone.
+
 Each phase is independently testable and shippable behind a feature flag (`paid_events_enabled` boolean read from a remote config or hardcoded constant during dev) — **except Phase 0, which ships flag-independent.**
 
 - **Phase 0 — Leave-event 12h rule** (§4.6). The one change in this spec that alters a live free-events feature (today, leaving works at any time) and that must ship **even with `paid_events_enabled` off** — it is a free-events rule, not a paid-events one. Its own small migration (`leave_event` rejects when `event start − now < 12h`) + UI pass (cancel-spot button disabled inside 12h, within-12h join confirmation). **Not gated by the feature flag.** Prerequisite the Stripe phases build on.
 - **Phase A — Host onboarding** (Connect Express + profile state). Behind flag.
 - **Phase B — Participant payment** (PaymentSheet + payments table + webhook).
-- **Phase C — Refunds** (participant cancel + host cancel event).
+- **Phase C — Refunds** (participant cancel + host cancel event). **Also includes the two system-fault refunds described in §6.2/§6.6 — event-full-at-finalize and cancelled-mid-checkout — which are deliberately deferred from Phase B: Phase B detects these cases and refuses to seat the user but does *not* fire the refund (the `payments` row is left `succeeded`), so Phase C must wire `stripe.refunds.create` for both branches and make the `EVENT_FULL_REFUNDED` / `EVENT_CANCELLED_REFUNDED` copy true.**
 - **Phase D — Delayed payouts** (pg_cron + process-payouts function).
 - **Phase E — Polish** (payouts screen, payment history, receipts).
   - **"How paid events work" in-app explainer.** A single scrollable screen of **collapsible sections** (collapsed by default, expand-on-tap — *not* a swipe carousel like `how-it-works.tsx`, so every topic is visible at a glance and the page works as jump-to reference, not linear onboarding). Sections, sourced from `cancellationAndRefund.md` + the §2 fee model: fees & what the host keeps, participant refund rules (12h cutoff, processing fees non-refundable), host cancellation / late-cancellation tracking, no-shows, payout timing (~24h after the event). Plain-language first, exact numbers second; "last updated" date shown.
