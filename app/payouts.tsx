@@ -33,6 +33,7 @@ export default function PayoutsScreen() {
   const onboarding = useStartPayoutOnboarding(user?.id);
 
   const payoutsEnabled = status.data?.payoutsEnabled ?? false;
+  const onboardingComplete = status.data?.onboardingComplete ?? false;
 
   // Stop verifying once payouts are enabled, or after the timeout if the webhook never lands.
   useEffect(() => {
@@ -81,6 +82,28 @@ export default function PayoutsScreen() {
             <ActivityIndicator size="large" color={colors.header} />
             <Text style={styles.verifyingText}>Verifying your payout setup… this might take a minute.</Text>
           </View>
+        ) : onboardingComplete ? (
+          <>
+            <View style={styles.iconWrapper}>
+              <Ionicons name="alert-circle-outline" size={48} color={colors.header} />
+            </View>
+            <Text style={styles.title}>Almost there</Text>
+            <Text style={styles.subtitle}>
+              You&apos;ve submitted your details, but Stripe still needs to verify your identity
+              before payouts can be enabled. This usually means uploading a photo of your ID.
+            </Text>
+
+            {onboarding.error && (
+              <Text style={styles.errorText}>{onboarding.error.message}</Text>
+            )}
+
+            <Button
+              title="Continue verification"
+              onPress={handleSetup}
+              loading={onboarding.isPending}
+              style={styles.actionBtn}
+            />
+          </>
         ) : (
           <>
             <View style={styles.iconWrapper}>

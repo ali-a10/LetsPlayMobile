@@ -298,6 +298,12 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 
 1. Host taps "Create paid event" or visits Profile → "Payouts".
 2. If `stripe_payouts_enabled = false`: show a "Set up payouts" screen with a CTA button.
+   - **CORRECTION:** `stripe_payouts_enabled = false` is not one state but two, and the Payouts screen must distinguish them — otherwise a host who already completed onboarding but still owes identity verification is dropped back on the full "Set up payouts" screen and thinks their work was discarded. Stripe's onboarding link only renders requirements that are *currently due* when it opens; the identity document/selfie step is frequently generated **reactively** after the host submits their basic info (Stripe couldn't verify them from data alone), so it cannot appear in the first session and forces a second trip. The screen therefore branches on **both** flags:
+     - `stripe_payouts_enabled` → "You're all set."
+     - `stripe_onboarding_complete && !stripe_payouts_enabled` (Stripe's `details_submitted` true, payouts not yet enabled) → an **"Almost there — Continue verification"** state whose CTA re-mints an AccountLink and reopens Stripe at the now-due verification step.
+     - neither → first-time "Set up payouts."
+
+     This state can't be skipped: whether verification is required at all is *conditional* (a host whose typed info verifies cleanly finishes in one pass), but some real hosts always hit it, so it must be handled. Setting the AccountLink's `collection_options.fields = 'eventually_due'` front-loads *some* requirements into the first session but **cannot guarantee** a single pass, because reactively-generated document requirements don't exist at link-creation time.
 3. Tapping the CTA calls `create-connect-account` first if `profiles.stripe_account_id` is null (to create the Stripe account shell), then calls `create-connect-account-link` and opens the returned URL in an in-app browser (`expo-web-browser`).
    - **CORRECTION:** opened with `expo-web-browser`'s `openBrowserAsync` (a plain in-app browser the user closes manually), not the auto-closing `openAuthSessionAsync` — see step 6 for why.
 4. Host completes Stripe-hosted onboarding (identity, business info, bank account, SIN).
