@@ -106,7 +106,7 @@ export default function EventDetailScreen() {
   const sportColor = getSportColor(event.sport);
   const within12h = isWithinLeaveCutoff(event.date);
   const spotsLeft = event.max_participants - event.current_participants;
-  const isFree = !event.is_paid || !event.price;
+  const isFree = !event.is_paid || !event.price_cents;
   const hostName = event.profiles
     ? `${event.profiles.first_name} ${event.profiles.last_name}`
     : 'Unknown';
@@ -233,7 +233,7 @@ export default function EventDetailScreen() {
               <View style={styles.detailTextGroup}>
                 <Text style={styles.detailLabel}>Price</Text>
                 <Text style={[styles.detailValue, { color: colors.success }]}>
-                  {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+                  {isFree ? 'Free' : `$${((event.price_cents ?? 0) / 100).toFixed(2)}`}
                 </Text>
               </View>
             </View>

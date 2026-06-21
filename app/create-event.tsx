@@ -230,7 +230,7 @@ export default function CreateEventScreen() {
           description: description.trim() || null,
           max_participants: parseInt(maxParticipants, 10) || 10,
           is_paid: isPaid,
-          price: isPaid ? parseFloat(price) : null,
+          price_cents: isPaid ? Math.round(parseFloat(price) * 100) : null,
         },
       ]);
 

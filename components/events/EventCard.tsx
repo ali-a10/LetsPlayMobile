@@ -15,7 +15,7 @@ interface EventCardProps {
 export function EventCard({ event, onPress }: EventCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const isFree = !event.is_paid || !event.price;
+  const isFree = !event.is_paid || !event.price_cents;
   const sportColor = getSportColor(event.sport);
   const hostFirstName = event.profiles?.first_name ?? 'Host';
 
@@ -51,7 +51,7 @@ export function EventCard({ event, onPress }: EventCardProps) {
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.bodyText}>
-              {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+              {isFree ? 'Free' : `$${((event.price_cents ?? 0) / 100).toFixed(2)}`}
             </Text>
           </View>
         </View>
