@@ -22,18 +22,27 @@ Deno.serve(async (req: Request) => {
 
   const body = await req.text();
 
-  let event: Stripe.Event;
-  try {
-    // Raw body + signature are verified against the endpoint's signing secret.
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '',
-      undefined,
-      cryptoProvider
-    );
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Invalid signature';
+  // Two destinations hit this one URL: the connected-accounts endpoint (account.updated) and the
+  // platform-account endpoint (payment_intent.*). Each has its own signing secret, so verify against
+  // whichever one matches — the right secret validates, the other throws and is skipped.
+  const webhookSecrets = [
+    Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '',          // connected-accounts destination
+    Deno.env.get('STRIPE_WEBHOOK_SECRET_PLATFORM') ?? '', // your platform-account destination
+  ].filter(Boolean);
+
+  let event: Stripe.Event | null = null;
+  let lastError: unknown = null;
+  for (const secret of webhookSecrets) {
+    try {
+      // Raw body + signature are verified against each configured signing secret.
+      event = await stripe.webhooks.constructEventAsync(body, signature, secret, undefined, cryptoProvider);
+      break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  if (!event) {
+    const message = lastError instanceof Error ? lastError.message : 'Invalid signature';
     return new Response(`Webhook signature verification failed: ${message}`, { status: 400 });
   }
 
