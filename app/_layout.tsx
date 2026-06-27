@@ -1,11 +1,14 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, StatusBar } from 'react-native';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 import { useAuth } from '../lib/hooks/useAuth';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { useThemeStore } from '../lib/stores/themeStore';
 import { supabase } from '../lib/supabase';
+
+const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
 
 /** Provides a theme-aware StatusBar that updates when the user toggles dark mode. */
 function ThemedStatusBar() {
@@ -96,9 +99,11 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <QueryProvider>
-      <ThemedStatusBar />
-      <AuthGate />
-    </QueryProvider>
+    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} urlScheme="letsplay">
+      <QueryProvider>
+        <ThemedStatusBar />
+        <AuthGate />
+      </QueryProvider>
+    </StripeProvider>
   );
 }

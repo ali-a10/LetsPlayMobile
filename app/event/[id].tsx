@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -11,6 +11,9 @@ import { useJoinEvent } from '../../lib/hooks/useJoinEvent';
 import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
 import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
+import { JoinPaidEventSheet } from '../../components/payments/JoinPaidEventSheet';
+import { usePayPaidEvent } from '../../lib/hooks/usePayPaidEvent';
+import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
 import { isWithinLeaveCutoff } from '../../lib/utils/eventTiming';
@@ -44,9 +47,32 @@ export default function EventDetailScreen() {
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
+  const payHook = usePayPaidEvent(id);
+  const [paidSheetVisible, setPaidSheetVisible] = useState(false);
+
+  // Close the paid-join sheet once the payment flow reports the user joined.
+  useEffect(() => {
+    if (payHook.status === 'joined') {
+      setPaidSheetVisible(false);
+      payHook.reset();
+    }
+  }, [payHook.status]);
+
   const handleJoinPress = () => {
+    if (PAID_EVENTS_ENABLED && event?.is_paid && event?.price_cents) {
+      payHook.reset();
+      setPaidSheetVisible(true);
+      return;
+    }
     setJoinError(null);
     setModalVisible(true);
+  };
+
+  const handlePaidCancel = () => {
+    if (!payHook.isProcessing) {
+      setPaidSheetVisible(false);
+      payHook.reset();
+    }
   };
 
   const handleConfirm = () => {
@@ -347,6 +373,18 @@ export default function EventDetailScreen() {
         confirmLabel="Confirm"
         confirmColor={colors.header}
       />
+
+      {event.is_paid && event.price_cents != null && (
+        <JoinPaidEventSheet
+          visible={paidSheetVisible}
+          eventTitle={event.title}
+          priceCents={event.price_cents}
+          isProcessing={payHook.isProcessing}
+          error={payHook.error}
+          onPay={payHook.pay}
+          onCancel={handlePaidCancel}
+        />
+      )}
 
       <ConfirmModal
         visible={leaveModalVisible}

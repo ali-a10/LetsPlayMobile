@@ -17,6 +17,37 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'P0006') {
     return "As the host, you can't leave your own event — cancel the event instead.";
   }
+
+  // create-payment-intent (Stripe paid-join, §4.7)
+  if (error.code === 'EVENT_NOT_FOUND') {
+    return 'This event no longer exists.';
+  }
+  if (error.code === 'EVENT_NOT_PAID') {
+    return 'This event is free — no payment is needed.';
+  }
+  if (error.code === 'EVENT_FULL') {
+    return 'This event is now full.';
+  }
+  if (error.code === 'EVENT_PAST') {
+    return 'This event has already started.';
+  }
+  if (error.code === 'USER_BLOCKED') {
+    return "You can't join this event.";
+  }
+
+  // confirm-payment-join (Stripe paid-join, §4.7)
+  if (error.code === 'PAYMENT_NOT_CONFIRMED') {
+    return "We couldn't confirm your payment. If you were charged, you'll be refunded automatically.";
+  }
+  if (error.code === 'EVENT_FULL_REFUNDED') {
+    return 'This event filled up before your spot was confirmed, so your payment was refunded.';
+  }
+  if (error.code === 'EVENT_CANCELLED_REFUNDED') {
+    return 'The host cancelled this event, so your payment was refunded.';
+  }
+  if (error.code === 'REFUND_FAILED') {
+    return "Something went wrong and we couldn't refund you automatically. Please contact support.";
+  }
   if (msg.includes('jwt') || msg.includes('token')) {
     return 'Your session has expired. Please log in again.';
   }

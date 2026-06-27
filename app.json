@@ -14,9 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "ca.letsplayapp.letsplay",
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "LetsPlay needs access to your photo library to set your profile picture."
+        "NSPhotoLibraryUsageDescription": "LetsPlay needs access to your photo library to set your profile picture.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
