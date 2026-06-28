@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStripe } from '@stripe/stripe-react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
-import { friendlyErrorMessage } from '../utils/errors';
+import { functionErrorMessage } from '../utils/errors';
 import { useAuth } from './useAuth';
 
 export type PayStatus =
@@ -12,16 +12,6 @@ export type PayStatus =
   | 'confirming'
   | 'joined'
   | 'failed';
-
-/** Reads a Supabase FunctionsHttpError's { code, message } body and maps it to friendly copy. */
-async function functionErrorMessage(err: any): Promise<string> {
-  try {
-    const body = await err.context.json();
-    return friendlyErrorMessage({ message: body.message ?? '', code: body.code });
-  } catch {
-    return friendlyErrorMessage({ message: err?.message ?? '' });
-  }
-}
 
 /**
  * Saga hook that runs the full pay-to-join flow for a paid event: create-payment-intent →

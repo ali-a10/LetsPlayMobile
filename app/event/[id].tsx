@@ -12,7 +12,9 @@ import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
 import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
 import { JoinPaidEventSheet } from '../../components/payments/JoinPaidEventSheet';
+import { CancelSpotSheet } from '../../components/payments/CancelSpotSheet';
 import { usePayPaidEvent } from '../../lib/hooks/usePayPaidEvent';
+import { useCancelSpot } from '../../lib/hooks/useCancelSpot';
 import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
@@ -49,6 +51,10 @@ export default function EventDetailScreen() {
 
   const payHook = usePayPaidEvent(id);
   const [paidSheetVisible, setPaidSheetVisible] = useState(false);
+
+  const cancelSpotMutation = useCancelSpot(id);
+  const [cancelSpotVisible, setCancelSpotVisible] = useState(false);
+  const [cancelSpotError, setCancelSpotError] = useState<string | null>(null);
 
   // Close the paid-join sheet once the payment flow reports the user joined.
   useEffect(() => {
@@ -108,6 +114,25 @@ export default function EventDetailScreen() {
     }
   };
 
+  const handleCancelSpotPress = () => {
+    setCancelSpotError(null);
+    setCancelSpotVisible(true);
+  };
+
+  const handleCancelSpotConfirm = () => {
+    cancelSpotMutation.mutate(undefined, {
+      onSuccess: () => setCancelSpotVisible(false),
+      onError: (err) => setCancelSpotError(err.message),
+    });
+  };
+
+  const handleCancelSpotDismiss = () => {
+    if (!cancelSpotMutation.isPending) {
+      setCancelSpotVisible(false);
+      setCancelSpotError(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -152,11 +177,13 @@ export default function EventDetailScreen() {
       );
     }
     if (event.isUserJoined) {
+      const isPaidSpot = event.is_paid && event.price_cents != null;
+      const joinedLabel = isPaidSpot ? 'Cancel my spot' : 'Leave Event';
       if (within12h) {
         return (
           <View>
             <Pressable style={[styles.leaveBtn, styles.leaveBtnDisabled]} disabled>
-              <Text style={styles.leaveBtnText}>Leave Event</Text>
+              <Text style={styles.leaveBtnText}>{joinedLabel}</Text>
             </Pressable>
             <Text style={styles.ctaHelperText}>
               Spots can't be cancelled within 12 hours of the event start.
@@ -167,9 +194,9 @@ export default function EventDetailScreen() {
       return (
         <Pressable
           style={styles.leaveBtn}
-          onPress={handleLeavePress}
+          onPress={isPaidSpot ? handleCancelSpotPress : handleLeavePress}
         >
-          <Text style={styles.leaveBtnText}>Leave Event</Text>
+          <Text style={styles.leaveBtnText}>{joinedLabel}</Text>
         </Pressable>
       );
     }
@@ -383,6 +410,18 @@ export default function EventDetailScreen() {
           error={payHook.error}
           onPay={payHook.pay}
           onCancel={handlePaidCancel}
+        />
+      )}
+
+      {event.is_paid && event.price_cents != null && (
+        <CancelSpotSheet
+          visible={cancelSpotVisible}
+          eventTitle={event.title}
+          priceCents={event.price_cents}
+          isProcessing={cancelSpotMutation.isPending}
+          error={cancelSpotError}
+          onConfirm={handleCancelSpotConfirm}
+          onCancel={handleCancelSpotDismiss}
         />
       )}
 

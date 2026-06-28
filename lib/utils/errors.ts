@@ -45,6 +45,9 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'EVENT_CANCELLED_REFUNDED') {
     return 'The host cancelled this event, so your payment was refunded.';
   }
+  if (error.code === 'REFUND_WINDOW_CLOSED') {
+    return "You can't cancel your spot within 12 hours of the event start.";
+  }
   if (error.code === 'REFUND_FAILED') {
     return "Something went wrong and we couldn't refund you automatically. Please contact support.";
   }
@@ -65,4 +68,14 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   }
 
   return 'Something went wrong. Please try again later.';
+}
+
+/** Reads a Supabase FunctionsHttpError's { code, message } body and maps it to friendly copy. */
+export async function functionErrorMessage(err: any): Promise<string> {
+  try {
+    const body = await err.context.json();
+    return friendlyErrorMessage({ message: body.message ?? '', code: body.code });
+  } catch {
+    return friendlyErrorMessage({ message: err?.message ?? '' });
+  }
 }
