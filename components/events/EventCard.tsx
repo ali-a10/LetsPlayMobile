@@ -24,6 +24,12 @@ export function EventCard({ event, onPress }: EventCardProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
+      {event.cancelled_at && (
+        <View style={styles.cancelledRibbon}>
+          <Text style={styles.cancelledRibbonText}>CANCELLED</Text>
+        </View>
+      )}
+
       {/* Top section: title + sport badge */}
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={2}>
@@ -115,6 +121,17 @@ function createStyles(colors: ThemeColors) {
     },
     cardPressed: {
       opacity: 0.75,
+    },
+    cancelledRibbon: {
+      backgroundColor: colors.error,
+      paddingVertical: 4,
+      alignItems: 'center',
+    },
+    cancelledRibbonText: {
+      color: sharedColors.white,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1,
     },
     header: {
       flexDirection: 'row',

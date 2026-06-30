@@ -25,6 +25,9 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'EVENT_NOT_PAID') {
     return 'This event is free — no payment is needed.';
   }
+  if (error.code === 'EVENT_CANCELLED') {
+    return 'This event has been cancelled.';
+  }
   if (error.code === 'EVENT_FULL') {
     return 'This event is now full.';
   }
@@ -47,6 +50,9 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   }
   if (error.code === 'REFUND_WINDOW_CLOSED') {
     return "You can't cancel your spot within 12 hours of the event start.";
+  }
+  if (error.code === 'CANCEL_WINDOW_CLOSED') {
+    return "You can't cancel an event within 12 hours of its start.";
   }
   if (error.code === 'REFUND_FAILED') {
     return "Something went wrong and we couldn't refund you automatically. Please contact support.";

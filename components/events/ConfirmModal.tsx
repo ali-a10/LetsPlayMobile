@@ -10,6 +10,7 @@ interface ConfirmModalProps {
   title: string;
   body: string;
   confirmLabel: string;
+  cancelLabel?: string;
   confirmColor?: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -23,6 +24,7 @@ export function ConfirmModal({
   title,
   body,
   confirmLabel,
+  cancelLabel = 'Cancel',
   confirmColor,
   onConfirm,
   onCancel,
@@ -42,7 +44,7 @@ export function ConfirmModal({
 
           <View style={styles.buttons}>
             <Pressable style={styles.cancelBtn} onPress={onCancel} disabled={isPending}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{cancelLabel}</Text>
             </Pressable>
             <Pressable
               style={[styles.confirmBtn, { backgroundColor: buttonColor }, isPending && styles.btnDisabled]}

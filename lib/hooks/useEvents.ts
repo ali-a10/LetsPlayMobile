@@ -31,6 +31,7 @@ export function useEvents() {
         .from('events')
         .select('*, profiles!host_id(first_name, last_name, avatar_url)')
         .gte('date', new Date().toISOString())
+        .is('cancelled_at', null)
         .order('date', { ascending: true });
 
       if (user) {

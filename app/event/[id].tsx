@@ -15,10 +15,11 @@ import { JoinPaidEventSheet } from '../../components/payments/JoinPaidEventSheet
 import { CancelSpotSheet } from '../../components/payments/CancelSpotSheet';
 import { usePayPaidEvent } from '../../lib/hooks/usePayPaidEvent';
 import { useCancelSpot } from '../../lib/hooks/useCancelSpot';
+import { useCancelEvent } from '../../lib/hooks/useCancelEvent';
 import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
-import { isWithinLeaveCutoff } from '../../lib/utils/eventTiming';
+import { isWithinLeaveCutoff, isWithinLateCancelWindow } from '../../lib/utils/eventTiming';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -133,6 +134,29 @@ export default function EventDetailScreen() {
     }
   };
 
+  const cancelEventMutation = useCancelEvent(id);
+  const [cancelEventModalVisible, setCancelEventModalVisible] = useState(false);
+  const [cancelEventError, setCancelEventError] = useState<string | null>(null);
+
+  const handleCancelEventPress = () => {
+    setCancelEventError(null);
+    setCancelEventModalVisible(true);
+  };
+
+  const handleCancelEventConfirm = () => {
+    cancelEventMutation.mutate(undefined, {
+      onSuccess: () => setCancelEventModalVisible(false),
+      onError: (err) => setCancelEventError(err.message),
+    });
+  };
+
+  const handleCancelEventDismiss = () => {
+    if (!cancelEventMutation.isPending) {
+      setCancelEventModalVisible(false);
+      setCancelEventError(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -168,12 +192,36 @@ export default function EventDetailScreen() {
 
   /** Renders the appropriate CTA button based on user/event state. */
   const renderCTA = () => {
+    if (event.cancelled_at) {
+      return (
+        <View style={styles.cancelledBanner}>
+          <Ionicons name="close-circle" size={18} color={colors.error} />
+          <Text style={styles.cancelledBannerText}>This event has been cancelled.</Text>
+        </View>
+      );
+    }
     if (event.isUserHost) {
       return (
-        <Pressable style={styles.editEventBtn} onPress={() => router.push(`/edit-event/${id}`)}>
-          <Ionicons name="create-outline" size={18} color={sharedColors.white} />
-          <Text style={styles.editEventBtnText}>Edit Event</Text>
-        </Pressable>
+        <View style={styles.hostCtaGroup}>
+          <Pressable style={styles.editEventBtn} onPress={() => router.push(`/edit-event/${id}`)}>
+            <Ionicons name="create-outline" size={18} color={sharedColors.white} />
+            <Text style={styles.editEventBtnText}>Edit Event</Text>
+          </Pressable>
+          {within12h ? (
+            <View>
+              <Pressable style={[styles.cancelEventBtn, styles.leaveBtnDisabled]} disabled>
+                <Text style={styles.cancelEventBtnText}>Cancel event</Text>
+              </Pressable>
+              <Text style={styles.ctaHelperText}>
+                Events can't be cancelled within 12 hours of the start.
+              </Text>
+            </View>
+          ) : (
+            <Pressable style={styles.cancelEventBtn} onPress={handleCancelEventPress}>
+              <Text style={styles.cancelEventBtnText}>Cancel event</Text>
+            </Pressable>
+          )}
+        </View>
       );
     }
     if (event.isUserJoined) {
@@ -434,6 +482,25 @@ export default function EventDetailScreen() {
         title="Leave Event?"
         body="Are you sure you want to leave this event?"
         confirmLabel="Leave"
+        confirmColor={colors.error}
+      />
+
+      <ConfirmModal
+        visible={cancelEventModalVisible}
+        isPending={cancelEventMutation.isPending}
+        error={cancelEventError}
+        onConfirm={handleCancelEventConfirm}
+        onCancel={handleCancelEventDismiss}
+        title="Cancel event?"
+        body={
+          !isFree && isWithinLateCancelWindow(event.date)
+            ? 'This is a late cancellation. All participants will be refunded in full. Late cancellations are tracked and repeated ones may pause your hosting. Continue?'
+            : !isFree
+            ? 'Cancel this event for all participants? Everyone who paid will be refunded in full.'
+            : 'Cancel this event for all participants?'
+        }
+        confirmLabel="Cancel event"
+        cancelLabel="Keep event"
         confirmColor={colors.error}
       />
     </SafeAreaView>
@@ -760,6 +827,35 @@ function createStyles(colors: ThemeColors) {
       color: colors.textMuted,
       textAlign: 'center',
       marginTop: 8,
+    },
+    hostCtaGroup: {
+      gap: 10,
+    },
+    cancelEventBtn: {
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.error,
+    },
+    cancelEventBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.error,
+    },
+    cancelledBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 12,
+      paddingVertical: 16,
+      backgroundColor: `${colors.error}15`,
+    },
+    cancelledBannerText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.error,
     },
     fullBtn: {
       backgroundColor: colors.cardBorder,

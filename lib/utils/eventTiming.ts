@@ -14,3 +14,15 @@ export function isWithinLeaveCutoff(eventDateIso: string): boolean {
   const msUntilStart = new Date(eventDateIso).getTime() - Date.now();
   return msUntilStart < LEAVE_CUTOFF_HOURS * 60 * 60 * 1000;
 }
+
+/** Hours before a paid event's start within which a host cancellation is "late" and triggers the warning. */
+export const LATE_CANCEL_HOURS = 48;
+
+/**
+ * Returns true when an event's start is less than LATE_CANCEL_HOURS away — used to show the host
+ * the late-cancellation warning. Display affordance only; the cancel-event Edge Function is the enforcer.
+ */
+export function isWithinLateCancelWindow(eventDateIso: string): boolean {
+  const msUntilStart = new Date(eventDateIso).getTime() - Date.now();
+  return msUntilStart < LATE_CANCEL_HOURS * 60 * 60 * 1000;
+}
