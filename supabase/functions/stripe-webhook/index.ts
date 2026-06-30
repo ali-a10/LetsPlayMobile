@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { refundPaymentFull } from '../_shared/refunds.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -11,8 +12,8 @@ const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 /**
  * Receives Stripe webhook events, verifies their signature, dedups them (§9), and routes them to handlers:
- * `account.updated` (host onboarding status), `payment_intent.succeeded` (join safety net), and
- * `payment_intent.payment_failed` (record a failed payment).
+ * `account.updated` (host onboarding status), `payment_intent.succeeded` (join safety net),
+ * `payment_intent.payment_failed` (record a failed payment), and `charge.refunded` (refund reconciliation safety net).
  */
 Deno.serve(async (req: Request) => {
   const signature = req.headers.get('stripe-signature');
@@ -84,6 +85,9 @@ Deno.serve(async (req: Request) => {
       case 'payment_intent.payment_failed':
         await handlePaymentIntentFailed(adminClient, event.data.object as Stripe.PaymentIntent);
         break;
+      case 'charge.refunded':
+        await handleChargeRefunded(adminClient, event.data.object as Stripe.Charge);
+        break;
       default:
         // Unhandled event types are acknowledged so Stripe stops retrying them.
         break;
@@ -128,7 +132,8 @@ async function handleAccountUpdated(
 /**
  * Safety net (§6.4): if the app crashed between Payment Sheet success and `confirm-payment-join`,
  * finalize the join here via the same shared `finalize_paid_join` transaction. Idempotent, so a
- * duplicate finalize (app already confirmed) is a no-op; the `event_full` outcome leaves the refund to Phase C.
+ * duplicate finalize is a no-op. Also covers the deferred refunds when the app never confirmed:
+ * a full refund if the host cancelled mid-checkout (§6.2) or the event filled first (§6.6).
  */
 async function handlePaymentIntentSucceeded(
   adminClient: ReturnType<typeof createClient>,
@@ -137,12 +142,69 @@ async function handlePaymentIntentSucceeded(
   const chargeId =
     typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
-  const { error } = await adminClient.rpc('finalize_paid_join', {
+  // Load our payment row for this PI; if we don't track it, nothing to do.
+  const { data: payment } = await adminClient
+    .from('payments')
+    .select('*')
+    .eq('stripe_payment_intent_id', pi.id)
+    .maybeSingle();
+  if (!payment) return;
+
+  // Record the charge id so charge.refunded reconciliation can find this row by charge.
+  if (chargeId && payment.stripe_charge_id !== chargeId) {
+    await adminClient.from('payments').update({ stripe_charge_id: chargeId }).eq('id', payment.id);
+    payment.stripe_charge_id = chargeId;
+  }
+
+  // Host cancelled while the user was mid-checkout (§6.2): refund in full, don't seat.
+  const { data: event } = await adminClient
+    .from('events')
+    .select('cancelled_at')
+    .eq('id', payment.event_id)
+    .single();
+  if (event?.cancelled_at) {
+    await refundPaymentFull(adminClient, payment);
+    return;
+  }
+
+  // Finalize the join. If the event filled first (§6.6), refund in full instead of seating.
+  const { data: result, error } = await adminClient.rpc('finalize_paid_join', {
     p_payment_intent_id: pi.id,
     p_charge_id: chargeId,
   });
   if (error) {
     throw new Error(`finalize_paid_join failed for ${pi.id}: ${error.message}`);
+  }
+  if (result === 'event_full') {
+    await refundPaymentFull(adminClient, payment);
+  }
+}
+
+/**
+ * Safety net (§7.4): a refund completed at Stripe. If our payments row for this charge isn't already
+ * marked refunded (the normal path updates it inline), reconcile it now via finalize_refund — covering
+ * a finalize that threw after a successful refund, or a manual dashboard refund with no app code involved.
+ */
+async function handleChargeRefunded(
+  adminClient: ReturnType<typeof createClient>,
+  charge: Stripe.Charge
+): Promise<void> {
+  const { data: payment } = await adminClient
+    .from('payments')
+    .select('id, status')
+    .eq('stripe_charge_id', charge.id)
+    .maybeSingle();
+
+  // No matching payment, or it's already reconciled → nothing to do (the common case).
+  if (!payment || payment.status === 'refunded') return;
+
+  const refundId = charge.refunds?.data?.[0]?.id ?? null;
+  const { error } = await adminClient.rpc('finalize_refund', {
+    p_payment_id: payment.id,
+    p_stripe_refund_id: refundId,
+  });
+  if (error) {
+    throw new Error(`finalize_refund failed for charge ${charge.id}: ${error.message}`);
   }
 }
 

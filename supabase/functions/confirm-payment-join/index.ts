@@ -1,6 +1,7 @@
 import { corsHeaders, json, fail } from '../_shared/cors.ts';
 import { createAdminClient, getUserFromRequest } from '../_shared/supabase.ts';
 import { stripe } from '../_shared/stripe.ts';
+import { refundPaymentFull } from '../_shared/refunds.ts';
 
 /**
  * Confirms a paid join after the Payment Sheet succeeds: verifies the PaymentIntent really succeeded with
@@ -57,10 +58,15 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (event?.cancelled_at) {
-      await admin
-        .from('payments')
-        .update({ status: 'succeeded', stripe_charge_id: chargeId })
-        .eq('id', payment.id);
+      // Host cancelled while the user was in the Payment Sheet (§6.2): refund in full, don't seat.
+      // Record the charge id first so charge.refunded can reconcile if the refund's finalize throws.
+      await admin.from('payments').update({ stripe_charge_id: chargeId }).eq('id', payment.id);
+      try {
+        await refundPaymentFull(admin, { ...payment, stripe_charge_id: chargeId });
+      } catch (refundErr) {
+        console.error(`confirm-payment-join cancelled refund failed for ${payment.id}:`, refundErr);
+        return fail('REFUND_FAILED', "We couldn't refund you automatically. Please contact support.", 502);
+      }
       return fail('EVENT_CANCELLED_REFUNDED', 'The host cancelled this event, so your payment was refunded.', 409);
     }
 
@@ -73,7 +79,14 @@ Deno.serve(async (req: Request) => {
 
     // 7. Map the finalize outcome.
     if (result === 'event_full') {
-      // Seat unavailable; money already taken — refund deferred to Phase C.
+      // Event filled before the seat was confirmed (§6.6): refund in full.
+      await admin.from('payments').update({ stripe_charge_id: chargeId }).eq('id', payment.id);
+      try {
+        await refundPaymentFull(admin, { ...payment, stripe_charge_id: chargeId });
+      } catch (refundErr) {
+        console.error(`confirm-payment-join event-full refund failed for ${payment.id}:`, refundErr);
+        return fail('REFUND_FAILED', "We couldn't refund you automatically. Please contact support.", 502);
+      }
       return fail('EVENT_FULL_REFUNDED', 'This event filled up before your spot was confirmed, so your payment was refunded.', 409);
     }
 

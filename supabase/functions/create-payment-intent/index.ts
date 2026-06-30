@@ -29,6 +29,9 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (!event) return fail('EVENT_NOT_FOUND', 'This event no longer exists.', 404);
+    if (event.cancelled_at) {
+      return fail('EVENT_CANCELLED', 'This event has been cancelled.', 409);
+    }
     if (!event.is_paid || !event.price_cents) {
       return fail('EVENT_NOT_PAID', 'This event is free — no payment is needed.', 400);
     }
