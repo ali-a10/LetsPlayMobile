@@ -781,3 +781,13 @@ Most of the money machinery runs where no user is watching — webhook handlers,
 - Multi-currency
 - Apple Pay / Google Pay (Stripe Payment Sheet supports these out of the box; can enable later with negligible code change)
 - **Full append-only payment audit log.** Phase 1 ships only `payments.updated_at` (§4.2) for "last touched." A `payment_status_history(payment_id, old_status, new_status, changed_at, reason)` table — written by a trigger on every status change — would give a defensible transition history for chargeback/reconciliation forensics. Deferred because Stripe's own event log (and the `stripe_events` table, §9) already provides a fallback audit source.
+
+---
+
+## 14. Implementation follow-ups (revisit after the rest of the build)
+
+Two items surfaced during the C2 (host-cancel / refund) build, intentionally left open to return to:
+
+1. **`stripe_refund_id` is null on `charge.refunded`-reconciled refunds.** The `charge.refunded` webhook handler (§7.4) reads the refund id from `charge.refunds.data[0].id`, but since Stripe API ≥ 2022-11-15 the Charge object delivered in the webhook **no longer embeds the `refunds` list**, so the id comes back null and `finalize_refund` stores null. This only affects the **reconcile path** (a manual dashboard refund, or the rare "refund succeeded but `finalize_refund` threw" gap) — app-initiated refunds (`refund-participant`, `cancel-event`) record the id directly from the `refunds.create` response. **Not functionally necessary** — nothing reads `stripe_refund_id`; the refund is fully effective without it. It's an audit/traceability field. Fix when revisited: in the handler, fall back to `stripe.refunds.list({ charge: charge.id, limit: 1 })` when the id isn't in the payload. (Left null for now by decision.)
+
+2. **`failed_refunds` path is built but not yet tested.** The `cancel-event` loop logs a row to `failed_refunds` and continues when an individual refund throws (§7.2 / §4.8), but this hasn't been exercised end-to-end. To test: give an event two paying participants, corrupt one's charge id in SQL (`UPDATE payments SET stripe_charge_id = 'ch_invalid' WHERE id = '<payment_id>'`), then host-cancel. Expected: the valid participant refunds normally, the corrupted one lands in `failed_refunds` with a Stripe "No such charge" `error_message` (and `resolved_at` null), the loop doesn't abort, the failed payment stays `succeeded`, `events.cancelled_at` is still set, and the function returns `{ refunded: 1, failed: 1 }`.
