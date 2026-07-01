@@ -15,7 +15,7 @@ import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
-import { SPORT_OPTIONS } from '../../lib/constants/sports';
+import { SportsPicker } from '../../components/profile/SportsPicker';
 
 /** Step 3 of signup: collects optional profile details and inserts the profile row. */
 export default function OnboardingProfileScreen() {
@@ -28,12 +28,6 @@ export default function OnboardingProfileScreen() {
   );
   const [aboutMe, setAboutMe] = useState(store.aboutMe);
   const [loading, setLoading] = useState(false);
-
-  function toggleSport(sport: string) {
-    setFavouriteSports((prev) =>
-      prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]
-    );
-  }
 
   async function handleComplete() {
     setLoading(true);
@@ -94,20 +88,11 @@ export default function OnboardingProfileScreen() {
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.sectionLabel}>Favourite Sports (optional)</Text>
-          <View style={styles.sportsContainer}>
-            {SPORT_OPTIONS.map((sport) => (
-              <Button
-                key={sport.value}
-                title={sport.label}
-                variant={
-                  favouriteSports.includes(sport.value) ? 'primary' : 'outline'
-                }
-                onPress={() => toggleSport(sport.value)}
-                style={styles.sportButton}
-              />
-            ))}
-          </View>
+          <SportsPicker
+            label="Favourite Sports (optional)"
+            value={favouriteSports}
+            onChange={setFavouriteSports}
+          />
 
           <Input
             label="About Me (optional)"
@@ -158,22 +143,6 @@ function createStyles(colors: ThemeColors) {
     },
     form: {
       width: '100%',
-    },
-    sectionLabel: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: colors.text,
-      marginBottom: 12,
-    },
-    sportsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-      marginBottom: 24,
-    },
-    sportButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
     },
     textArea: {
       height: 100,

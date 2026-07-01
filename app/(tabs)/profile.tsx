@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { useProfile } from '../../lib/hooks/useProfile';
 import { useUserStats } from '../../lib/hooks/useUserStats';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
+import { ConfirmModal } from '../../components/events/ConfirmModal';
 
 /** Displays the user's profile with stats, account settings, and activity links. */
 export default function ProfileScreen() {
@@ -27,6 +28,23 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
   const { data: stats, isLoading: statsLoading } = useUserStats(user?.id);
+  const [logOutVisible, setLogOutVisible] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logOutError, setLogOutError] = useState<string | null>(null);
+
+  /** Signs the user out, surfacing any error in the modal. AuthGate handles the redirect. */
+  const handleConfirmLogOut = async () => {
+    setLoggingOut(true);
+    setLogOutError(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setLogOutError(error.message);
+      setLoggingOut(false);
+      return;
+    }
+    setLogOutVisible(false);
+    setLoggingOut(false);
+  };
 
   if (profileLoading || statsLoading) {
     return (
@@ -108,7 +126,7 @@ export default function ProfileScreen() {
 
       {/* Log Out */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.6} onPress={() => supabase.auth.signOut()}>
+        <TouchableOpacity style={styles.menuItem} activeOpacity={0.6} onPress={() => setLogOutVisible(true)}>
           <Ionicons name="log-out-outline" size={22} color={colors.error} />
           <Text style={[styles.menuLabel, { color: colors.error }]}>Log Out</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.error} />
@@ -120,6 +138,18 @@ export default function ProfileScreen() {
         <MenuItem colors={colors} icon="trash-outline" label="Delete Account" onPress={() => router.push('/delete-account')} danger />
       </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={logOutVisible}
+        isPending={loggingOut}
+        error={logOutError}
+        title="Log out?"
+        body="Are you sure you want to log out?"
+        confirmLabel="Log Out"
+        confirmColor={colors.error}
+        onConfirm={handleConfirmLogOut}
+        onCancel={() => { setLogOutVisible(false); setLogOutError(null); }}
+      />
     </View>
   );
 }
