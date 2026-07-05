@@ -70,6 +70,7 @@ export type Database = {
           is_paid: boolean;
           price_cents: number | null;
           cancelled_at: string | null;
+          payout_held_at: string | null;
           current_participants: number;
           created_at: string;
         };
@@ -87,6 +88,7 @@ export type Database = {
           is_paid?: boolean;
           price_cents?: number | null;
           cancelled_at?: string | null;
+          payout_held_at?: string | null;
           current_participants?: number;
           created_at?: string;
         };
@@ -104,6 +106,7 @@ export type Database = {
           is_paid?: boolean;
           price_cents?: number | null;
           cancelled_at?: string | null;
+          payout_held_at?: string | null;
           current_participants?: number;
           created_at?: string;
         };
@@ -137,6 +140,7 @@ export type Database = {
           transferred_at: string | null;
           disputed_at: string | null;
           failed_reason: string | null;
+          payout_failed_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -159,6 +163,7 @@ export type Database = {
           transferred_at?: string | null;
           disputed_at?: string | null;
           failed_reason?: string | null;
+          payout_failed_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -181,6 +186,7 @@ export type Database = {
           transferred_at?: string | null;
           disputed_at?: string | null;
           failed_reason?: string | null;
+          payout_failed_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
