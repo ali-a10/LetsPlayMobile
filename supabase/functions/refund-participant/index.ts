@@ -30,6 +30,16 @@ Deno.serve(async (req: Request) => {
       return fail('PAYMENT_NOT_CONFIRMED', "We couldn't find a payment to refund for this event.", 404);
     }
 
+    // 1b. A disputed charge can't be refunded — the bank's chargeback process already owns the money,
+    //     and Stripe rejects a refund on it. Stop here with a clear message instead of a doomed refund.
+    if (payment.disputed_at) {
+      return fail(
+        'PAYMENT_DISPUTED',
+        'This payment is being disputed through your bank, so it cannot be cancelled here.',
+        409
+      );
+    }
+
     // 2. Enforce the 12-hour window in Postgres (time math never runs in JS — §1).
     //    The guard raises P0005 inside the window, P0002 if the event vanished.
     const { error: windowErr } = await admin.rpc('assert_refund_window_open', {

@@ -13,7 +13,8 @@ const cryptoProvider = Stripe.createSubtleCryptoProvider();
 /**
  * Receives Stripe webhook events, verifies their signature, dedups them (§9), and routes them to handlers:
  * `account.updated` (host onboarding status), `payment_intent.succeeded` (join safety net),
- * `payment_intent.payment_failed` (record a failed payment), and `charge.refunded` (refund reconciliation safety net).
+ * `payment_intent.payment_failed` (record a failed payment), `charge.refunded` (refund reconciliation safety net),
+ * `charge.dispute.created` (hold a disputed payment out of payouts), and `transfer.reversed` (flag a reversed payout).
  */
 Deno.serve(async (req: Request) => {
   const signature = req.headers.get('stripe-signature');
@@ -87,6 +88,12 @@ Deno.serve(async (req: Request) => {
         break;
       case 'charge.refunded':
         await handleChargeRefunded(adminClient, event.data.object as Stripe.Charge);
+        break;
+      case 'charge.dispute.created':
+        await handleDisputeCreated(adminClient, event.data.object as Stripe.Dispute);
+        break;
+      case 'transfer.reversed':
+        await handleTransferReversed(adminClient, event.data.object as Stripe.Transfer);
         break;
       default:
         // Unhandled event types are acknowledged so Stripe stops retrying them.
@@ -226,5 +233,55 @@ async function handlePaymentIntentFailed(
     .in('status', ['pending', 'failed']);
   if (error) {
     throw new Error(`Failed to mark payment failed for ${pi.id}: ${error.message}`);
+  }
+}
+
+/**
+ * Holds a disputed payment out of the payout job (§8.2): a chargeback pulled the charge (plus a fee) back
+ * out of the platform balance, so stamp `disputed_at` on the matching payment — get_due_payouts then skips
+ * it, and paying the host would be a double loss. Idempotent: only stamps a row not already disputed.
+ */
+async function handleDisputeCreated(
+  adminClient: ReturnType<typeof createClient>,
+  dispute: Stripe.Dispute
+): Promise<void> {
+  // Match on the PaymentIntent id (set on our row at creation) rather than the charge id (only written
+  // once payment_intent.succeeded lands) — Stripe doesn't guarantee order, and the dispute can arrive
+  // before the charge id exists on the row, as with the dispute test card. Fall back to charge id.
+  const piId =
+    typeof dispute.payment_intent === 'string'
+      ? dispute.payment_intent
+      : dispute.payment_intent?.id ?? null;
+  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id ?? null;
+
+  let query = adminClient
+    .from('payments')
+    .update({ disputed_at: new Date().toISOString() })
+    .is('disputed_at', null);
+  if (piId) query = query.eq('stripe_payment_intent_id', piId);
+  else if (chargeId) query = query.eq('stripe_charge_id', chargeId);
+  else return;
+
+  const { error } = await query;
+  if (error) {
+    throw new Error(`Failed to mark payment disputed (pi=${piId}, charge=${chargeId}): ${error.message}`);
+  }
+}
+
+/**
+ * Flags a reversed payout for manual review (§8.3): a transfer we already sent a host was reversed (a late
+ * dispute or a manual clawback), so record it on the matching payment via `payout_failed_reason` — a
+ * tripwire that surfaces "money we paid out came back, go look." No automated recovery is attempted.
+ */
+async function handleTransferReversed(
+  adminClient: ReturnType<typeof createClient>,
+  transfer: Stripe.Transfer
+): Promise<void> {
+  const { error } = await adminClient
+    .from('payments')
+    .update({ payout_failed_reason: 'Transfer reversed — needs manual review' })
+    .eq('stripe_transfer_id', transfer.id);
+  if (error) {
+    throw new Error(`Failed to flag reversed transfer ${transfer.id}: ${error.message}`);
   }
 }

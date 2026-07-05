@@ -63,11 +63,14 @@ Deno.serve(async (req: Request) => {
 
     // 6. Refund every succeeded payment in full. One bad refund must not abort the rest:
     //    log it to failed_refunds and continue with the others (§7.2 / §4.8).
+    //    Skip disputed payments: the bank's chargeback already owns that money and Stripe rejects a
+    //    refund on it, so attempting one would only fail and pollute failed_refunds.
     const { data: payments, error: payErr } = await admin
       .from('payments')
       .select('*')
       .eq('event_id', event_id)
-      .eq('status', 'succeeded');
+      .eq('status', 'succeeded')
+      .is('disputed_at', null);
     if (payErr) throw new Error(`failed to load payments: ${payErr.message}`);
 
     let refunded = 0;

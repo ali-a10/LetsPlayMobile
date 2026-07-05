@@ -57,6 +57,9 @@ export function friendlyErrorMessage(error: { message: string; code?: string }):
   if (error.code === 'REFUND_FAILED') {
     return "Something went wrong and we couldn't refund you automatically. Please contact support.";
   }
+  if (error.code === 'PAYMENT_DISPUTED') {
+    return 'This payment is being disputed through your bank, so it cannot be cancelled here. Please contact support.';
+  }
   if (msg.includes('jwt') || msg.includes('token')) {
     return 'Your session has expired. Please log in again.';
   }
