@@ -14,6 +14,7 @@ import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useMyJoinedEvents } from '../../lib/hooks/useMyJoinedEvents';
 import { useMyHostedEvents } from '../../lib/hooks/useMyHostedEvents';
+import { useRecentlyEndedJoinedEvents } from '../../lib/hooks/useRecentlyEndedJoinedEvents';
 import { EventCard } from '../../components/events/EventCard';
 import { EventWithHost } from '../../lib/hooks/useEvents';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
@@ -26,7 +27,7 @@ export default function MyEventsScreen() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [activeTab, setActiveTab] = useState<0 | 1>(0);
+  const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
 
   const {
     data: joinedEvents,
@@ -41,6 +42,13 @@ export default function MyEventsScreen() {
     error: hostedError,
     refetch: refetchHosted,
   } = useMyHostedEvents(userId);
+
+  const {
+    data: pastEvents,
+    isLoading: pastLoading,
+    error: pastError,
+    refetch: refetchPast,
+  } = useRecentlyEndedJoinedEvents(userId);
 
   const renderItem = ({ item }: { item: EventWithHost }) => (
     <EventCard
@@ -119,7 +127,7 @@ export default function MyEventsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Events</Text>
-        <Text style={styles.headerSubtitle}>Your upcoming events</Text>
+        <Text style={styles.headerSubtitle}>Your events</Text>
       </View>
 
       {/* Content */}
@@ -135,36 +143,54 @@ export default function MyEventsScreen() {
             </Text>
           </Pressable>
           <Pressable
-            style={[styles.segment, activeTab === 1 && styles.segmentActive]}
+            style={[styles.segment, styles.segmentDivider, activeTab === 1 && styles.segmentActive]}
             onPress={() => setActiveTab(1)}
           >
             <Text style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>
               Hosting
             </Text>
           </Pressable>
+          <Pressable
+            style={[styles.segment, styles.segmentDivider, activeTab === 2 && styles.segmentActive]}
+            onPress={() => setActiveTab(2)}
+          >
+            <Text style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>
+              Past
+            </Text>
+          </Pressable>
         </View>
 
-        {activeTab === 0
-          ? renderTabContent(
-              joinedLoading,
-              joinedError,
-              refetchJoined,
-              joinedEvents,
-              "You haven't joined any upcoming events.",
-              <Pressable style={styles.ctaButton} onPress={() => router.push('/(tabs)')}>
-                <Text style={styles.ctaText}>Browse Events</Text>
-              </Pressable>
-            )
-          : renderTabContent(
-              hostedLoading,
-              hostedError,
-              refetchHosted,
-              hostedEvents,
-              "You're not hosting any upcoming events.",
-              <Pressable style={styles.ctaButton} onPress={() => router.push('/create-event')}>
-                <Text style={styles.ctaText}>Create an Event</Text>
-              </Pressable>
-            )}
+        {activeTab === 0 &&
+          renderTabContent(
+            joinedLoading,
+            joinedError,
+            refetchJoined,
+            joinedEvents,
+            "You haven't joined any upcoming events.",
+            <Pressable style={styles.ctaButton} onPress={() => router.push('/(tabs)')}>
+              <Text style={styles.ctaText}>Browse Events</Text>
+            </Pressable>
+          )}
+        {activeTab === 1 &&
+          renderTabContent(
+            hostedLoading,
+            hostedError,
+            refetchHosted,
+            hostedEvents,
+            "You're not hosting any upcoming events.",
+            <Pressable style={styles.ctaButton} onPress={() => router.push('/create-event')}>
+              <Text style={styles.ctaText}>Create an Event</Text>
+            </Pressable>
+          )}
+        {activeTab === 2 &&
+          renderTabContent(
+            pastLoading,
+            pastError,
+            refetchPast,
+            pastEvents,
+            'No events ended in the last 7 days.',
+            null
+          )}
       </View>
     </SafeAreaView>
   );
@@ -214,6 +240,10 @@ function createStyles(colors: ThemeColors) {
       paddingVertical: 10,
       alignItems: 'center',
       backgroundColor: colors.card,
+    },
+    segmentDivider: {
+      borderLeftWidth: 1,
+      borderLeftColor: colors.menuDivider,
     },
     segmentActive: {
       backgroundColor: colors.tabBarActive,
