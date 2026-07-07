@@ -34,6 +34,10 @@ interface ReportUserModalProps {
   targetName: string;
   onClose: () => void;
   onSuccess: () => void;
+  /** Links the report to an event (needed for a host no-show report to hold the payout). */
+  eventId?: string;
+  /** When set, the reason is fixed to this value and the picker is hidden (e.g. a no-show report). */
+  presetReason?: ReportReason;
 }
 
 /** Modal that collects a reason and optional details, then submits a report for the given user. */
@@ -43,19 +47,22 @@ export function ReportUserModal({
   targetName,
   onClose,
   onSuccess,
+  eventId,
+  presetReason,
 }: ReportUserModalProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const reportMutation = useReportUser();
 
-  const [reason, setReason] = useState<ReportReason | null>(null);
+  const isReasonLocked = !!presetReason;
+  const [reason, setReason] = useState<ReportReason | null>(presetReason ?? null);
   const [details, setDetails] = useState('');
   const [reasonError, setReasonError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   /** Resets local form state to a clean slate. */
   const resetForm = () => {
-    setReason(null);
+    setReason(presetReason ?? null);
     setDetails('');
     setReasonError(null);
     setSubmitError(null);
@@ -79,7 +86,7 @@ export function ReportUserModal({
     }
     setReasonError(null);
     reportMutation.mutate(
-      { reportedId: targetUserId, reason, details },
+      { reportedId: targetUserId, reason, details, eventId },
       {
         onSuccess: () => {
           resetForm();
@@ -113,33 +120,43 @@ export function ReportUserModal({
             >
               <Text style={styles.title}>Report {targetName}</Text>
               <Text style={styles.body}>
-                Tell us what's going on. Reports are reviewed by our team and the reported user is not notified.
+                {isReasonLocked
+                  ? `Report ${targetName} for not showing up as the host of this event. Our team will review it. Reports are confidential and the host isn't notified.`
+                  : "Tell us what's going on. Reports are reviewed by our team and the reported user is not notified."}
               </Text>
 
               <Text style={styles.fieldLabel}>Reason</Text>
-              <View style={styles.reasonList}>
-                {REASON_OPTIONS.map((opt) => {
-                  const selected = reason === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      style={[styles.reasonRow, selected && styles.reasonRowSelected]}
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        setReason(opt.value);
-                        setReasonError(null);
-                      }}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected }}
-                    >
-                      <View style={[styles.radio, selected && styles.radioSelected]}>
-                        {selected && <View style={styles.radioDot} />}
-                      </View>
-                      <Text style={styles.reasonLabel}>{opt.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              {isReasonLocked ? (
+                <View style={styles.reasonLocked}>
+                  <Text style={styles.reasonLockedText}>
+                    {REASON_OPTIONS.find((o) => o.value === reason)?.label ?? 'Host no-show'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.reasonList}>
+                  {REASON_OPTIONS.map((opt) => {
+                    const selected = reason === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        style={[styles.reasonRow, selected && styles.reasonRowSelected]}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setReason(opt.value);
+                          setReasonError(null);
+                        }}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected }}
+                      >
+                        <View style={[styles.radio, selected && styles.radioSelected]}>
+                          {selected && <View style={styles.radioDot} />}
+                        </View>
+                        <Text style={styles.reasonLabel}>{opt.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
               {reasonError && <Text style={styles.error}>{reasonError}</Text>}
 
               <Text style={styles.fieldLabel}>Details (optional)</Text>
@@ -240,6 +257,18 @@ function createStyles(colors: ThemeColors) {
     reasonList: {
       gap: 4,
       marginBottom: 4,
+    },
+    reasonLocked: {
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 8,
+      backgroundColor: colors.chipInactiveBg,
+      marginBottom: 4,
+    },
+    reasonLockedText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
     },
     reasonRow: {
       flexDirection: 'row',

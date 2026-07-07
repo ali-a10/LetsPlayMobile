@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,13 +13,14 @@ import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
 import { JoinPaidEventSheet } from '../../components/payments/JoinPaidEventSheet';
 import { CancelSpotSheet } from '../../components/payments/CancelSpotSheet';
+import { ReportUserModal } from '../../components/profile/ReportUserModal';
 import { usePayPaidEvent } from '../../lib/hooks/usePayPaidEvent';
 import { useCancelSpot } from '../../lib/hooks/useCancelSpot';
 import { useCancelEvent } from '../../lib/hooks/useCancelEvent';
 import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
-import { isWithinLeaveCutoff, isWithinLateCancelWindow } from '../../lib/utils/eventTiming';
+import { isWithinLeaveCutoff, isWithinLateCancelWindow, isWithinNoShowWindow } from '../../lib/utils/eventTiming';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -56,6 +57,8 @@ export default function EventDetailScreen() {
   const cancelSpotMutation = useCancelSpot(id);
   const [cancelSpotVisible, setCancelSpotVisible] = useState(false);
   const [cancelSpotError, setCancelSpotError] = useState<string | null>(null);
+
+  const [reportNoShowVisible, setReportNoShowVisible] = useState(false);
 
   // Close the paid-join sheet once the payment flow reports the user joined.
   useEffect(() => {
@@ -226,6 +229,16 @@ export default function EventDetailScreen() {
     }
     if (event.isUserJoined) {
       const isPaidSpot = event.is_paid && event.price_cents != null;
+      // Once the event has started, a paid participant can report a host no-show for 24h, which
+      // pauses the host's payout. Takes precedence over the (now-moot) cancel-spot button.
+      if (isPaidSpot && isWithinNoShowWindow(event.date)) {
+        return (
+          <Pressable style={styles.reportNoShowBtn} onPress={() => setReportNoShowVisible(true)}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
+            <Text style={styles.reportNoShowBtnText}>Report host no-show</Text>
+          </Pressable>
+        );
+      }
       const joinedLabel = isPaidSpot ? 'Cancel my spot' : 'Leave Event';
       if (within12h) {
         return (
@@ -502,6 +515,19 @@ export default function EventDetailScreen() {
         confirmLabel="Cancel event"
         cancelLabel="Keep event"
         confirmColor={colors.error}
+      />
+
+      <ReportUserModal
+        visible={reportNoShowVisible}
+        targetUserId={event.host_id}
+        targetName={hostName}
+        eventId={id}
+        presetReason="host_no_show"
+        onClose={() => setReportNoShowVisible(false)}
+        onSuccess={() => {
+          setReportNoShowVisible(false);
+          Alert.alert('Thanks', 'Our team will review your report and follow up.');
+        }}
       />
     </SafeAreaView>
   );
@@ -839,6 +865,21 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.error,
     },
     cancelEventBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.error,
+    },
+    reportNoShowBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 12,
+      paddingVertical: 16,
+      borderWidth: 1.5,
+      borderColor: colors.error,
+    },
+    reportNoShowBtnText: {
       fontSize: 16,
       fontWeight: '700',
       color: colors.error,

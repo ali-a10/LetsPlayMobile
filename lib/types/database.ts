@@ -307,6 +307,7 @@ export type Database = {
           reporter_id: string;
           reported_id: string;
           reason: ReportReason;
+          event_id: string | null;
           details: string | null;
           status: ReportStatus;
           created_at: string;
@@ -316,6 +317,7 @@ export type Database = {
           reporter_id: string;
           reported_id: string;
           reason: ReportReason;
+          event_id?: string | null;
           details?: string | null;
           status?: ReportStatus;
           created_at?: string;
@@ -325,6 +327,7 @@ export type Database = {
           reporter_id?: string;
           reported_id?: string;
           reason?: ReportReason;
+          event_id?: string | null;
           details?: string | null;
           status?: ReportStatus;
           created_at?: string;

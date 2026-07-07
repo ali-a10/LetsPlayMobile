@@ -26,3 +26,16 @@ export function isWithinLateCancelWindow(eventDateIso: string): boolean {
   const msUntilStart = new Date(eventDateIso).getTime() - Date.now();
   return msUntilStart < LATE_CANCEL_HOURS * 60 * 60 * 1000;
 }
+
+/** Hours after a paid event's start during which a participant can report a host no-show. */
+export const NO_SHOW_REPORT_HOURS = 24;
+
+/**
+ * Returns true when an event has started and is still within NO_SHOW_REPORT_HOURS of its start —
+ * the window in which a participant can report a host no-show. Display affordance only; the reports
+ * insert trigger enforces the same window server-side against now().
+ */
+export function isWithinNoShowWindow(eventDateIso: string): boolean {
+  const msSinceStart = Date.now() - new Date(eventDateIso).getTime();
+  return msSinceStart >= 0 && msSinceStart <= NO_SHOW_REPORT_HOURS * 60 * 60 * 1000;
+}
