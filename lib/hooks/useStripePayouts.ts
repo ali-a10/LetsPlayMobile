@@ -65,3 +65,21 @@ export function useStartPayoutOnboarding(userId: string | undefined) {
     },
   });
 }
+
+/**
+ * Opens the host's Stripe Express dashboard in the in-app browser via a freshly
+ * minted single-use login link from the create-express-login-link Edge Function.
+ */
+export function useOpenStripeDashboard() {
+  return useMutation<WebBrowser.WebBrowserResult, Error>({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('create-express-login-link');
+      if (error) throw new Error('Could not open your Stripe dashboard. Please try again.');
+
+      const url = data?.url as string | undefined;
+      if (!url) throw new Error('Could not open your Stripe dashboard. Please try again.');
+
+      return WebBrowser.openBrowserAsync(url);
+    },
+  });
+}

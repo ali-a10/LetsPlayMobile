@@ -8,6 +8,7 @@ import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { useAuth } from '../lib/hooks/useAuth';
 import { usePayoutStatus, useStartPayoutOnboarding } from '../lib/hooks/useStripePayouts';
+import { HostEarnings } from '../components/payments/HostEarnings';
 
 // How long to keep polling for the webhook after onboarding before giving up.
 // Generous (~1 min) so the "Verifying… this might take a minute" copy stays honest;
@@ -76,7 +77,10 @@ export default function PayoutsScreen() {
             <ActivityIndicator size="large" color={colors.header} />
           </View>
         ) : payoutsEnabled ? (
-          <PayoutsReady styles={styles} colors={colors} />
+          <>
+            <Text style={styles.earningsHeading}>Your earnings</Text>
+            <HostEarnings userId={user!.id} />
+          </>
         ) : verifying ? (
           <View style={styles.centerBlock}>
             <ActivityIndicator size="large" color={colors.header} />
@@ -141,22 +145,6 @@ export default function PayoutsScreen() {
   );
 }
 
-/** Renders the "payouts are ready" confirmation state. */
-function PayoutsReady({ styles, colors }: { styles: ReturnType<typeof createStyles>; colors: ThemeColors }) {
-  return (
-    <>
-      <View style={styles.iconWrapper}>
-        <Ionicons name="checkmark-circle" size={48} color={colors.header} />
-      </View>
-      <Text style={styles.title}>You&apos;re all set</Text>
-      <Text style={styles.subtitle}>
-        Your payouts are enabled. Earnings from your paid events will be sent to your
-        connected account automatically.
-      </Text>
-    </>
-  );
-}
-
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
@@ -209,6 +197,12 @@ function createStyles(colors: ThemeColors) {
       color: colors.text,
       textAlign: 'center',
       marginBottom: 12,
+    },
+    earningsHeading: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 16,
     },
     subtitle: {
       fontSize: 15,
