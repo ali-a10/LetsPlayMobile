@@ -477,6 +477,17 @@ export default function CreateEventScreen() {
             />
           )}
 
+          {isPaid && (
+            <TouchableOpacity
+              style={styles.feesLink}
+              onPress={() => router.push('/how-paid-events-work')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="information-circle-outline" size={16} color={colors.sectionTitle} />
+              <Text style={styles.feesLinkText}>How do fees &amp; refunds work?</Text>
+            </TouchableOpacity>
+          )}
+
           <Button
             title="Create Event"
             onPress={handleCreate}
@@ -596,6 +607,18 @@ function createStyles(colors: ThemeColors) {
       fontSize: 13,
       color: colors.text,
       fontWeight: '500',
+    },
+    feesLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    feesLinkText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.sectionTitle,
     },
     pickerActions: {
       flexDirection: 'row',

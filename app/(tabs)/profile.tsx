@@ -10,6 +10,7 @@ import {
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -104,9 +105,9 @@ export default function ProfileScreen() {
       {/* Support & Legal Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support & Legal</Text>
-        <MenuItem colors={colors} icon="help-circle-outline" label="Help / FAQ" />
-        <MenuItem colors={colors} icon="close-circle-outline" label="Cancellation Policy" />
-        <MenuItem colors={colors} icon="document-text-outline" label="Terms of Service" />
+        <MenuItem colors={colors} icon="help-circle-outline" label="Help / FAQ" onPress={() => router.push('/how-paid-events-work')} />
+        <MenuItem colors={colors} icon="close-circle-outline" label="Cancellation Policy" onPress={() => router.push('/how-paid-events-work')} />
+        <MenuItem colors={colors} icon="document-text-outline" label="Terms of Service" onPress={() => WebBrowser.openBrowserAsync('https://letsplayapp.ca')} />
         <MenuItem colors={colors} icon="shield-checkmark-outline" label="Privacy Policy" />
       </View>
 

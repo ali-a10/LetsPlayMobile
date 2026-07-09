@@ -80,6 +80,7 @@ export default function PayoutsScreen() {
           <>
             <Text style={styles.earningsHeading}>Your earnings</Text>
             <HostEarnings userId={user!.id} />
+            <LearnMoreLink styles={styles} colors={colors} onPress={() => router.push('/how-paid-events-work')} />
           </>
         ) : verifying ? (
           <View style={styles.centerBlock}>
@@ -138,10 +139,30 @@ export default function PayoutsScreen() {
               loading={onboarding.isPending}
               style={styles.actionBtn}
             />
+
+            <LearnMoreLink styles={styles} colors={colors} onPress={() => router.push('/how-paid-events-work')} />
           </>
         )}
       </ScrollView>
     </View>
+  );
+}
+
+/** A centered "Learn more about how payouts work" link that opens the paid-events explainer. */
+function LearnMoreLink({
+  styles,
+  colors,
+  onPress,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.learnMoreLink} onPress={onPress} activeOpacity={0.7}>
+      <Ionicons name="information-circle-outline" size={16} color={colors.sectionTitle} />
+      <Text style={styles.learnMoreText}>Learn more about how payouts work</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -203,6 +224,19 @@ function createStyles(colors: ThemeColors) {
       fontWeight: '700',
       color: colors.text,
       marginBottom: 16,
+    },
+    learnMoreLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 14,
+      marginTop: 8,
+    },
+    learnMoreText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.sectionTitle,
     },
     subtitle: {
       fontSize: 15,
