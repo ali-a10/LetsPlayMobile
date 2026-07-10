@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { useAuth } from '../lib/hooks/useAuth';
-import { usePayoutStatus, useStartPayoutOnboarding } from '../lib/hooks/useStripePayouts';
+import { usePayoutStatus, useStartPayoutOnboarding, useSyncPayoutStatus } from '../lib/hooks/useStripePayouts';
 import { HostEarnings } from '../components/payments/HostEarnings';
 
 // How long to keep polling for the webhook after onboarding before giving up.
@@ -32,6 +32,7 @@ export default function PayoutsScreen() {
   const [verifying, setVerifying] = useState(false);
   const status = usePayoutStatus(user?.id, verifying);
   const onboarding = useStartPayoutOnboarding(user?.id);
+  const sync = useSyncPayoutStatus(user?.id);
 
   const payoutsEnabled = status.data?.payoutsEnabled ?? false;
   const onboardingComplete = status.data?.onboardingComplete ?? false;
@@ -47,14 +48,30 @@ export default function PayoutsScreen() {
     return () => clearTimeout(timer);
   }, [verifying]);
 
-  /** Starts Stripe onboarding, then polls payout status to catch the webhook update on return. */
+  /**
+   * Starts Stripe onboarding; when the browser closes, actively re-reads the account status
+   * from Stripe so the correct state shows immediately, falling back to polling if that fails.
+   */
   const handleSetup = async () => {
     try {
       await onboarding.mutateAsync();
-      // The browser closed — begin polling; the webhook may flip the flag any moment now.
-      setVerifying(true);
     } catch {
       // Error is surfaced via onboarding.error below.
+      return;
+    }
+    // The browser closed. Show a brief spinner while we ask Stripe directly for the real status.
+    setVerifying(true);
+    try {
+      const result = await sync.mutateAsync();
+      // Keep the spinner + poll running ONLY while Stripe is still verifying with nothing left for
+      // the host to do (pendingVerification) — that's when the flag is about to flip on its own.
+      // Otherwise show the resolved state now: earnings if enabled, else "Almost there" (action needed).
+      if (result.payoutsEnabled || !result.pendingVerification) {
+        setVerifying(false);
+      }
+    } catch {
+      // Active fetch failed — leave verifying on so the 2s poll + timeout backstop it,
+      // and the account.updated webhook still lands as the safety net.
     }
   };
 

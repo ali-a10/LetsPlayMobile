@@ -55,10 +55,18 @@ Deno.serve(async (req: Request) => {
 
     // Express account for a Canadian host. Both capabilities are requested so the
     // account reaches charges_enabled && payouts_enabled — the flag the app gates on (§5.3).
+    // business_type + business_profile are prefilled so hosts (all individuals selling access to
+    // pickup games under the LetsPlay platform) aren't asked for business type, industry, or website.
     const account = await stripe.accounts.create({
       type: 'express',
       country: 'CA',
       email: profile.email,
+      business_type: 'individual',
+      business_profile: {
+        mcc: '7997', // Membership clubs — sports & recreation
+        url: 'https://letsplayapp.ca',
+        product_description: 'Hosting recreational sports events and pickup games on the LetsPlay app, where participants pay to reserve a spot.',
+      },
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },

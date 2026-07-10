@@ -8,6 +8,11 @@ export type PayoutStatus = {
   payoutsEnabled: boolean;
 };
 
+// The active-fetch result adds pendingVerification (Stripe is still reviewing, nothing for the
+// host to do) — used to decide whether to keep watching. It's not stored in the DB, so it lives
+// only on the sync result, not on the cached PayoutStatus.
+export type PayoutSyncResult = PayoutStatus & { pendingVerification: boolean };
+
 /**
  * Reads the host's Stripe payout status from their profile; pass `poll` to refetch
  * every ~2s (used while waiting for the account.updated webhook to land after onboarding).
@@ -62,6 +67,34 @@ export function useStartPayoutOnboarding(userId: string | undefined) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payouts', userId] });
       queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+    },
+  });
+}
+
+/**
+ * Actively re-reads the host's Connect account from Stripe (via the refresh-connect-account
+ * Edge Function) the moment the onboarding browser closes, and writes the fresh status into
+ * the payouts cache — so the screen shows the real state instantly instead of polling for the
+ * account.updated webhook.
+ */
+export function useSyncPayoutStatus(userId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation<PayoutSyncResult, Error>({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('refresh-connect-account');
+      if (error) throw new Error(error.message);
+      return data as PayoutSyncResult;
+    },
+    onSuccess: async (result) => {
+      // Cancel any in-flight ['payouts'] refetch (e.g. the invalidate from onboarding's onSuccess)
+      // so a slower, staler DB read can't overwrite the fresh status we just fetched from Stripe.
+      await queryClient.cancelQueries({ queryKey: ['payouts', userId] });
+      queryClient.setQueryData<PayoutStatus>(['payouts', userId], {
+        accountId: result.accountId,
+        onboardingComplete: result.onboardingComplete,
+        payoutsEnabled: result.payoutsEnabled,
+      });
     },
   });
 }
