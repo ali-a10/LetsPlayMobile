@@ -149,7 +149,10 @@ export default function EditEventScreen() {
   }
 
   const eventDate = new Date(event.date);
-  const priceLabel = event.is_paid && event.price ? `$${event.price.toFixed(2)}` : 'Free';
+  const priceLabel =
+    event.is_paid && event.price_cents
+      ? `$${(event.price_cents / 100).toFixed(2)}`
+      : 'Free';
 
   const dirty =
     title.trim() !== event.title ||

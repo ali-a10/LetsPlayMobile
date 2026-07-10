@@ -96,6 +96,8 @@ ALTER TABLE profiles
 
 `stripe_payouts_enabled` mirrors Stripe's `charges_enabled && payouts_enabled` flag — gates the "create paid event" button.
 
+> **CORRECTION:** see §5.3 — this formula holds only while the `card_payments` capability stays active; otherwise gate on `payouts_enabled` + `transfers` capability instead.
+
 ### 4.2 New table `payments`
 
 ```sql
@@ -296,10 +298,19 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 
 1. Host taps "Create paid event" or visits Profile → "Payouts".
 2. If `stripe_payouts_enabled = false`: show a "Set up payouts" screen with a CTA button.
+   - **CORRECTION:** `stripe_payouts_enabled = false` is not one state but two, and the Payouts screen must distinguish them — otherwise a host who already completed onboarding but still owes identity verification is dropped back on the full "Set up payouts" screen and thinks their work was discarded. Stripe's onboarding link only renders requirements that are *currently due* when it opens; the identity document/selfie step is frequently generated **reactively** after the host submits their basic info (Stripe couldn't verify them from data alone), so it cannot appear in the first session and forces a second trip. The screen therefore branches on **both** flags:
+     - `stripe_payouts_enabled` → "You're all set."
+     - `stripe_onboarding_complete && !stripe_payouts_enabled` (Stripe's `details_submitted` true, payouts not yet enabled) → an **"Almost there — Continue verification"** state whose CTA re-mints an AccountLink and reopens Stripe at the now-due verification step.
+     - neither → first-time "Set up payouts."
+
+     This state can't be skipped: whether verification is required at all is *conditional* (a host whose typed info verifies cleanly finishes in one pass), but some real hosts always hit it, so it must be handled. Setting the AccountLink's `collection_options.fields = 'eventually_due'` front-loads *some* requirements into the first session but **cannot guarantee** a single pass, because reactively-generated document requirements don't exist at link-creation time.
 3. Tapping the CTA calls `create-connect-account` first if `profiles.stripe_account_id` is null (to create the Stripe account shell), then calls `create-connect-account-link` and opens the returned URL in an in-app browser (`expo-web-browser`).
+   - **CORRECTION:** opened with `expo-web-browser`'s `openBrowserAsync` (a plain in-app browser the user closes manually), not the auto-closing `openAuthSessionAsync` — see step 6 for why.
 4. Host completes Stripe-hosted onboarding (identity, business info, bank account, SIN).
 5. Stripe redirects back to a deep link (`letsplay://payouts-complete`).
+   - **CORRECTION:** Stripe redirects to an **https** return URL (`https://letsplayapp.ca/payouts-complete`), not a custom scheme. Stripe rejects `letsplay://` ("not a valid URL"), so the return URL must be http(s).
 6. On returning to the app via deep link, refetch the profile (TanStack Query invalidate on `profile` key). The `account.updated` webhook (see §5.3) will have flipped `stripe_payouts_enabled` before the user lands back; if there's a race (webhook lands milliseconds late), the profile screen shows a "Verifying…" state and **polls via TanStack Query's `refetchInterval`** on `['profile', userId]` (every ~2s, stop once `stripe_payouts_enabled` flips true or after a ~10s cap) — preferred over a hand-rolled `useEffect` loop: less custom code, automatic cleanup, same effect.
+   - **CORRECTION:** because Stripe returns to an https page (not a custom scheme), there is **no automatic deep-link return** in Expo Go: the user closes the in-app browser manually, and the Payouts screen refetches profile / `['payouts', userId]`. The "Verifying…" poll (~2s, ~10s cap) still covers webhook lag. A *seamless* auto-return (browser self-closes and lands the user back on the screen) requires **Universal Links / App Links** on `letsplayapp.ca` plus an EAS dev build — deferred to Phase B/polish.
 
 ### 5.2 Edge Functions
 
@@ -307,6 +318,7 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 <!-- Ali: stripe requires a fresh URL. this will be loaded in the same browser as the previous function, then after this is done (or the user backs out), the user returns to the app
 - if the user backs out, we wont need to call create-connect-account, only create-connect-account-link -->
 - **`create-connect-account-link`**: creates a Stripe AccountLink with `type='account_onboarding'`, refresh + return URLs to deep links. Returns the URL.
+  - **CORRECTION:** `refresh_url` + `return_url` must be **https** (`https://letsplayapp.ca/payouts-complete`), not deep links — Stripe rejects custom app schemes (`letsplay://`) with "not a valid URL".
 - **`NOTE:`** i have comments in the .md file that don't show in the preview 
 - **`ANOTHER NOTE:`** to access the claude chat where i asked about this doc, type /resume and select 'Understand stripe payment design file'
 
@@ -314,6 +326,7 @@ RLS: service-role writes only; no client access (it's operator-facing). Recovery
 ### 5.3 Webhook: `account.updated`
 
 When fired, fetch the account, update `stripe_onboarding_complete` (details_submitted) and `stripe_payouts_enabled` (charges_enabled && payouts_enabled) on the profile. SEE section 9 for more details on the webhook
+- **CORRECTION:** the `charges_enabled && payouts_enabled` formula only works because we request the `card_payments` capability (§5.2) and it activates on full verification. Hosts never charge cards (separate charges & transfers), so `charges_enabled` isn't truly required for them — if `card_payments` ever stops activating, this formula would stay false forever and lock out valid hosts. If that happens, switch the gate to `payouts_enabled && capabilities.transfers === 'active'`.
 - **`NOTE:`** i have comments in the .md file that don't show in the preview 
 <!-- ALI- what is a webhook: it's a way for one system (stripe in this case) to tell your server "hey, something happened" without your server having to keep asking. so in this case, i give stripe a URL ("when something happens, POST to this URL"). Then Stripe calls you (sends a POST event w/ data) the moment it happens -->
 
@@ -423,6 +436,7 @@ Mark the `payments` row `failed`, store `failed_reason`. No participant row was 
 ### 6.6 Race & edge cases
 
 - **Event fills during checkout**: `confirm-payment-join` runs the capacity check again; if full, refund immediately (full refund — platform eats the $0.30 Stripe flat fee per §1).
+  - **CORRECTION (phasing):** the *refund* here (and the equivalent cancelled-mid-checkout refund in §6.2) is **implemented in Phase C, not Phase B.** Phase B detects "full"/"cancelled" and does not seat the user, but leaves the payment `succeeded`; Phase C fires the actual refund. Safe because the app stays unpublished until all phases are tested (§11 launch gate).
 - **User leaves Payment Sheet without paying**: the PI stays in `requires_payment_method` **indefinitely** — unconfirmed PaymentIntents do *not* auto-expire (that's Checkout Sessions; the ~7-day expiry is for authorized holds). The `payments` row stays `pending`, and since `pending` counts as active in the partial unique index (§4.2), a naive re-join attempt would hit a unique violation and lock the user out of the event forever. Handled by the pending-row lookup in `create-payment-intent` (§6.2): the retry reuses the same PI instead of inserting a new row.
 - **Duplicate join attempts**: partial unique index on `payments` prevents two `pending`/`succeeded` rows for the same `(event_id, user_id)`.
 
@@ -695,14 +709,21 @@ Matches the repo's existing conventions (the project uses **`app.json`**, not `a
 
 ## 11. Implementation Phases
 
+> **Launch gate: the app does not go live until every phase (0 + A–E) of this spec is implemented and thoroughly tested.** There are no real users until then — the app stays unpublished through the entire payments build, so test-mode-only phases can ship incrementally without exposing incomplete money flows to anyone.
+
 Each phase is independently testable and shippable behind a feature flag (`paid_events_enabled` boolean read from a remote config or hardcoded constant during dev) — **except Phase 0, which ships flag-independent.**
 
 - **Phase 0 — Leave-event 12h rule** (§4.6). The one change in this spec that alters a live free-events feature (today, leaving works at any time) and that must ship **even with `paid_events_enabled` off** — it is a free-events rule, not a paid-events one. Its own small migration (`leave_event` rejects when `event start − now < 12h`) + UI pass (cancel-spot button disabled inside 12h, within-12h join confirmation). **Not gated by the feature flag.** Prerequisite the Stripe phases build on.
 - **Phase A — Host onboarding** (Connect Express + profile state). Behind flag.
 - **Phase B — Participant payment** (PaymentSheet + payments table + webhook).
-- **Phase C — Refunds** (participant cancel + host cancel event).
+- **Phase C — Refunds** (participant cancel + host cancel event). **Also includes the two system-fault refunds described in §6.2/§6.6 — event-full-at-finalize and cancelled-mid-checkout — which are deliberately deferred from Phase B: Phase B detects these cases and refuses to seat the user but does *not* fire the refund (the `payments` row is left `succeeded`), so Phase C must wire `stripe.refunds.create` for both branches and make the `EVENT_FULL_REFUNDED` / `EVENT_CANCELLED_REFUNDED` copy true.**
 - **Phase D — Delayed payouts** (pg_cron + process-payouts function).
 - **Phase E — Polish** (payouts screen, payment history, receipts).
+  - **"How paid events work" in-app explainer.** A single scrollable screen of **collapsible sections** (collapsed by default, expand-on-tap — *not* a swipe carousel like `how-it-works.tsx`, so every topic is visible at a glance and the page works as jump-to reference, not linear onboarding). Sections, sourced from `cancellationAndRefund.md` + the §2 fee model: fees & what the host keeps, participant refund rules (12h cutoff, processing fees non-refundable), host cancellation / late-cancellation tracking, no-shows, payout timing (~24h after the event). Plain-language first, exact numbers second; "last updated" date shown.
+  - **Entry points:** the Phase A payouts screen ("Learn more about payouts" link), the create-event paid section, and the currently-dormant Profile menu items (Cancellation Policy / Help / Terms) all route here.
+  - **Hybrid with the web:** the in-app page ends with a "View full terms" link out to the web-hosted Terms / Cancellation Policy on `letsplayapp.ca` — the in-app page covers the friendly educational summary (rarely changes), the web holds the formal, freely-updatable legal docs (the web docs themselves remain the separate §12.3 go-live track).
+  - **Why Phase E, not earlier:** the page documents the full money loop (fees, refunds, cancellations, payouts), whose behavior only fully exists once B/C/D ship. Writing it here means every rule it states is already shipped and testable, avoiding doc drift; and since the feature stays flag-off until B+C+D land (§12.3), no user ever hits a missing link in the meantime.
+  - **Payout-status confirmation UX (post-launch, low priority).** After onboarding, the Payouts screen shows a "Verifying… this might take a minute" state that polls (~60s cap) for the `account.updated` webhook to flip `stripe_payouts_enabled`. This can still lose a race if the webhook is slow, and isn't seamless. A more robust fix: an **active status fetch on return** — when the in-app browser closes, call an Edge Function that runs `stripe.accounts.retrieve()` and updates the flag immediately (reads Stripe's source directly instead of waiting for the webhook notification; the webhook stays as the safety net for later changes). Optionally pair with Universal/App Links for a smooth auto-return. **We might want to change this, but it isn't urgent — the current poll is acceptable for launch; revisit after.**
 
 ---
 
@@ -760,3 +781,13 @@ Most of the money machinery runs where no user is watching — webhook handlers,
 - Multi-currency
 - Apple Pay / Google Pay (Stripe Payment Sheet supports these out of the box; can enable later with negligible code change)
 - **Full append-only payment audit log.** Phase 1 ships only `payments.updated_at` (§4.2) for "last touched." A `payment_status_history(payment_id, old_status, new_status, changed_at, reason)` table — written by a trigger on every status change — would give a defensible transition history for chargeback/reconciliation forensics. Deferred because Stripe's own event log (and the `stripe_events` table, §9) already provides a fallback audit source.
+
+---
+
+## 14. Implementation follow-ups (revisit after the rest of the build)
+
+Two items surfaced during the C2 (host-cancel / refund) build, intentionally left open to return to:
+
+1. **`stripe_refund_id` is null on `charge.refunded`-reconciled refunds.** The `charge.refunded` webhook handler (§7.4) reads the refund id from `charge.refunds.data[0].id`, but since Stripe API ≥ 2022-11-15 the Charge object delivered in the webhook **no longer embeds the `refunds` list**, so the id comes back null and `finalize_refund` stores null. This only affects the **reconcile path** (a manual dashboard refund, or the rare "refund succeeded but `finalize_refund` threw" gap) — app-initiated refunds (`refund-participant`, `cancel-event`) record the id directly from the `refunds.create` response. **Not functionally necessary** — nothing reads `stripe_refund_id`; the refund is fully effective without it. It's an audit/traceability field. Fix when revisited: in the handler, fall back to `stripe.refunds.list({ charge: charge.id, limit: 1 })` when the id isn't in the payload. (Left null for now by decision.)
+
+2. **`failed_refunds` path is built but not yet tested.** The `cancel-event` loop logs a row to `failed_refunds` and continues when an individual refund throws (§7.2 / §4.8), but this hasn't been exercised end-to-end. To test: give an event two paying participants, corrupt one's charge id in SQL (`UPDATE payments SET stripe_charge_id = 'ch_invalid' WHERE id = '<payment_id>'`), then host-cancel. Expected: the valid participant refunds normally, the corrupted one lands in `failed_refunds` with a Stripe "No such charge" `error_message` (and `resolved_at` null), the loop doesn't abort, the failed payment stays `succeeded`, `events.cancelled_at` is still set, and the function returns `{ refunded: 1, failed: 1 }`.

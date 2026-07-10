@@ -10,6 +10,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -17,6 +18,7 @@ import { useProfile } from '../../lib/hooks/useProfile';
 import { useUserStats } from '../../lib/hooks/useUserStats';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
+import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
 
 /** Displays the user's profile with stats, account settings, and activity links. */
@@ -105,6 +107,9 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Account</Text>
         <MenuItem colors={colors} icon="create-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
         {/* <MenuItem colors={colors} icon="mail-outline" label="Email Preferences" /> */}
+        {PAID_EVENTS_ENABLED && (
+          <MenuItem colors={colors} icon="cash-outline" label="Payouts" onPress={() => router.push('/payouts')} />
+        )}
         <MenuItem colors={colors} icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
       </View>
 
@@ -118,9 +123,9 @@ export default function ProfileScreen() {
       {/* Support & Legal Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support & Legal</Text>
-        <MenuItem colors={colors} icon="help-circle-outline" label="Help / FAQ" />
-        <MenuItem colors={colors} icon="close-circle-outline" label="Cancellation Policy" />
-        <MenuItem colors={colors} icon="document-text-outline" label="Terms of Service" />
+        <MenuItem colors={colors} icon="help-circle-outline" label="Help / FAQ" onPress={() => router.push('/how-paid-events-work')} />
+        <MenuItem colors={colors} icon="close-circle-outline" label="Cancellation Policy" onPress={() => router.push('/how-paid-events-work')} />
+        <MenuItem colors={colors} icon="document-text-outline" label="Terms of Service" onPress={() => WebBrowser.openBrowserAsync('https://letsplayapp.ca')} />
         <MenuItem colors={colors} icon="shield-checkmark-outline" label="Privacy Policy" />
       </View>
 

@@ -11,13 +11,15 @@ export function useUserStats(userId: string | undefined) {
       const [joinedRes, hostedRes] = await Promise.all([
         supabase
           .from('participants')
-          .select('event_id, events!inner(host_id)', { count: 'exact', head: true })
+          .select('event_id, events!inner(host_id, cancelled_at)', { count: 'exact', head: true })
           .eq('user_id', userId!)
-          .neq('events.host_id', userId!),
+          .neq('events.host_id', userId!)
+          .is('events.cancelled_at', null),
         supabase
           .from('events')
           .select('id', { count: 'exact', head: true })
-          .eq('host_id', userId!),
+          .eq('host_id', userId!)
+          .is('cancelled_at', null),
       ]);
 
       if (joinedRes.error) throw joinedRes.error;

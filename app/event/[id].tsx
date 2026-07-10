@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share } from 'react-native';
+import { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,16 @@ import { useJoinEvent } from '../../lib/hooks/useJoinEvent';
 import { useLeaveEvent } from '../../lib/hooks/useLeaveEvent';
 import { ParticipantList } from '../../components/events/ParticipantList';
 import { ConfirmModal } from '../../components/events/ConfirmModal';
+import { JoinPaidEventSheet } from '../../components/payments/JoinPaidEventSheet';
+import { CancelSpotSheet } from '../../components/payments/CancelSpotSheet';
+import { ReportUserModal } from '../../components/profile/ReportUserModal';
+import { usePayPaidEvent } from '../../lib/hooks/usePayPaidEvent';
+import { useCancelSpot } from '../../lib/hooks/useCancelSpot';
+import { useCancelEvent } from '../../lib/hooks/useCancelEvent';
+import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
+import { isWithinLeaveCutoff, isWithinLateCancelWindow, isWithinNoShowWindow } from '../../lib/utils/eventTiming';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -43,9 +51,38 @@ export default function EventDetailScreen() {
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
+  const payHook = usePayPaidEvent(id);
+  const [paidSheetVisible, setPaidSheetVisible] = useState(false);
+
+  const cancelSpotMutation = useCancelSpot(id);
+  const [cancelSpotVisible, setCancelSpotVisible] = useState(false);
+  const [cancelSpotError, setCancelSpotError] = useState<string | null>(null);
+
+  const [reportNoShowVisible, setReportNoShowVisible] = useState(false);
+
+  // Close the paid-join sheet once the payment flow reports the user joined.
+  useEffect(() => {
+    if (payHook.status === 'joined') {
+      setPaidSheetVisible(false);
+      payHook.reset();
+    }
+  }, [payHook.status]);
+
   const handleJoinPress = () => {
+    if (PAID_EVENTS_ENABLED && event?.is_paid && event?.price_cents) {
+      payHook.reset();
+      setPaidSheetVisible(true);
+      return;
+    }
     setJoinError(null);
     setModalVisible(true);
+  };
+
+  const handlePaidCancel = () => {
+    if (!payHook.isProcessing) {
+      setPaidSheetVisible(false);
+      payHook.reset();
+    }
   };
 
   const handleConfirm = () => {
@@ -81,6 +118,48 @@ export default function EventDetailScreen() {
     }
   };
 
+  const handleCancelSpotPress = () => {
+    setCancelSpotError(null);
+    setCancelSpotVisible(true);
+  };
+
+  const handleCancelSpotConfirm = () => {
+    cancelSpotMutation.mutate(undefined, {
+      onSuccess: () => setCancelSpotVisible(false),
+      onError: (err) => setCancelSpotError(err.message),
+    });
+  };
+
+  const handleCancelSpotDismiss = () => {
+    if (!cancelSpotMutation.isPending) {
+      setCancelSpotVisible(false);
+      setCancelSpotError(null);
+    }
+  };
+
+  const cancelEventMutation = useCancelEvent(id);
+  const [cancelEventModalVisible, setCancelEventModalVisible] = useState(false);
+  const [cancelEventError, setCancelEventError] = useState<string | null>(null);
+
+  const handleCancelEventPress = () => {
+    setCancelEventError(null);
+    setCancelEventModalVisible(true);
+  };
+
+  const handleCancelEventConfirm = () => {
+    cancelEventMutation.mutate(undefined, {
+      onSuccess: () => setCancelEventModalVisible(false),
+      onError: (err) => setCancelEventError(err.message),
+    });
+  };
+
+  const handleCancelEventDismiss = () => {
+    if (!cancelEventMutation.isPending) {
+      setCancelEventModalVisible(false);
+      setCancelEventError(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -103,8 +182,9 @@ export default function EventDetailScreen() {
   }
 
   const sportColor = getSportColor(event.sport);
+  const within12h = isWithinLeaveCutoff(event.date);
   const spotsLeft = event.max_participants - event.current_participants;
-  const isFree = !event.is_paid || !event.price;
+  const isFree = !event.is_paid || !event.price_cents;
   const hostName = event.profiles
     ? `${event.profiles.first_name} ${event.profiles.last_name}`
     : 'Unknown';
@@ -115,21 +195,69 @@ export default function EventDetailScreen() {
 
   /** Renders the appropriate CTA button based on user/event state. */
   const renderCTA = () => {
+    if (event.cancelled_at) {
+      return (
+        <View style={styles.cancelledBanner}>
+          <Ionicons name="close-circle" size={18} color={colors.error} />
+          <Text style={styles.cancelledBannerText}>This event has been cancelled.</Text>
+        </View>
+      );
+    }
     if (event.isUserHost) {
       return (
-        <Pressable style={styles.editEventBtn} onPress={() => router.push(`/edit-event/${id}`)}>
-          <Ionicons name="create-outline" size={18} color={sharedColors.white} />
-          <Text style={styles.editEventBtnText}>Edit Event</Text>
-        </Pressable>
+        <View style={styles.hostCtaGroup}>
+          <Pressable style={styles.editEventBtn} onPress={() => router.push(`/edit-event/${id}`)}>
+            <Ionicons name="create-outline" size={18} color={sharedColors.white} />
+            <Text style={styles.editEventBtnText}>Edit Event</Text>
+          </Pressable>
+          {within12h ? (
+            <View>
+              <Pressable style={[styles.cancelEventBtn, styles.leaveBtnDisabled]} disabled>
+                <Text style={styles.cancelEventBtnText}>Cancel event</Text>
+              </Pressable>
+              <Text style={styles.ctaHelperText}>
+                Events can't be cancelled within 12 hours of the start.
+              </Text>
+            </View>
+          ) : (
+            <Pressable style={styles.cancelEventBtn} onPress={handleCancelEventPress}>
+              <Text style={styles.cancelEventBtnText}>Cancel event</Text>
+            </Pressable>
+          )}
+        </View>
       );
     }
     if (event.isUserJoined) {
+      const isPaidSpot = event.is_paid && event.price_cents != null;
+      // Once the event has started, a paid participant can report a host no-show for 24h, which
+      // pauses the host's payout. Takes precedence over the (now-moot) cancel-spot button.
+      if (isPaidSpot && isWithinNoShowWindow(event.date)) {
+        return (
+          <Pressable style={styles.reportNoShowBtn} onPress={() => setReportNoShowVisible(true)}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
+            <Text style={styles.reportNoShowBtnText}>Report host no-show</Text>
+          </Pressable>
+        );
+      }
+      const joinedLabel = isPaidSpot ? 'Cancel my spot' : 'Leave Event';
+      if (within12h) {
+        return (
+          <View>
+            <Pressable style={[styles.leaveBtn, styles.leaveBtnDisabled]} disabled>
+              <Text style={styles.leaveBtnText}>{joinedLabel}</Text>
+            </Pressable>
+            <Text style={styles.ctaHelperText}>
+              Spots can't be cancelled within 12 hours of the event start.
+            </Text>
+          </View>
+        );
+      }
       return (
         <Pressable
           style={styles.leaveBtn}
-          onPress={handleLeavePress}
+          onPress={isPaidSpot ? handleCancelSpotPress : handleLeavePress}
         >
-          <Text style={styles.leaveBtnText}>Leave Event</Text>
+          <Text style={styles.leaveBtnText}>{joinedLabel}</Text>
         </Pressable>
       );
     }
@@ -219,7 +347,7 @@ export default function EventDetailScreen() {
               <View style={styles.detailTextGroup}>
                 <Text style={styles.detailLabel}>Price</Text>
                 <Text style={[styles.detailValue, { color: colors.success }]}>
-                  {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+                  {isFree ? 'Free' : `$${((event.price_cents ?? 0) / 100).toFixed(2)}`}
                 </Text>
               </View>
             </View>
@@ -325,10 +453,38 @@ export default function EventDetailScreen() {
         onConfirm={handleConfirm}
         onCancel={handleCancel}
         title="Join Event?"
-        body="Are you sure you want to join this event?"
+        body={
+          within12h
+            ? "Are you sure you want to join this event? You won't be able to cancel this spot — it starts within 12 hours."
+            : 'Are you sure you want to join this event?'
+        }
         confirmLabel="Confirm"
         confirmColor={colors.header}
       />
+
+      {event.is_paid && event.price_cents != null && (
+        <JoinPaidEventSheet
+          visible={paidSheetVisible}
+          eventTitle={event.title}
+          priceCents={event.price_cents}
+          isProcessing={payHook.isProcessing}
+          error={payHook.error}
+          onPay={payHook.pay}
+          onCancel={handlePaidCancel}
+        />
+      )}
+
+      {event.is_paid && event.price_cents != null && (
+        <CancelSpotSheet
+          visible={cancelSpotVisible}
+          eventTitle={event.title}
+          priceCents={event.price_cents}
+          isProcessing={cancelSpotMutation.isPending}
+          error={cancelSpotError}
+          onConfirm={handleCancelSpotConfirm}
+          onCancel={handleCancelSpotDismiss}
+        />
+      )}
 
       <ConfirmModal
         visible={leaveModalVisible}
@@ -340,6 +496,38 @@ export default function EventDetailScreen() {
         body="Are you sure you want to leave this event?"
         confirmLabel="Leave"
         confirmColor={colors.error}
+      />
+
+      <ConfirmModal
+        visible={cancelEventModalVisible}
+        isPending={cancelEventMutation.isPending}
+        error={cancelEventError}
+        onConfirm={handleCancelEventConfirm}
+        onCancel={handleCancelEventDismiss}
+        title="Cancel event?"
+        body={
+          !isFree && isWithinLateCancelWindow(event.date)
+            ? 'This is a late cancellation. All participants will be refunded in full. Late cancellations are tracked and repeated ones may pause your hosting. Continue?'
+            : !isFree
+            ? 'Cancel this event for all participants? Everyone who paid will be refunded in full.'
+            : 'Cancel this event for all participants?'
+        }
+        confirmLabel="Cancel event"
+        cancelLabel="Keep event"
+        confirmColor={colors.error}
+      />
+
+      <ReportUserModal
+        visible={reportNoShowVisible}
+        targetUserId={event.host_id}
+        targetName={hostName}
+        eventId={id}
+        presetReason="host_no_show"
+        onClose={() => setReportNoShowVisible(false)}
+        onSuccess={() => {
+          setReportNoShowVisible(false);
+          Alert.alert('Thanks', 'Our team will review your report and follow up.');
+        }}
       />
     </SafeAreaView>
   );
@@ -656,6 +844,59 @@ function createStyles(colors: ThemeColors) {
       fontSize: 16,
       fontWeight: '700',
       color: sharedColors.white,
+    },
+    leaveBtnDisabled: {
+      opacity: 0.5,
+    },
+    ctaHelperText: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    hostCtaGroup: {
+      gap: 10,
+    },
+    cancelEventBtn: {
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.error,
+    },
+    cancelEventBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.error,
+    },
+    reportNoShowBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 12,
+      paddingVertical: 16,
+      borderWidth: 1.5,
+      borderColor: colors.error,
+    },
+    reportNoShowBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.error,
+    },
+    cancelledBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 12,
+      paddingVertical: 16,
+      backgroundColor: `${colors.error}15`,
+    },
+    cancelledBannerText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.error,
     },
     fullBtn: {
       backgroundColor: colors.cardBorder,

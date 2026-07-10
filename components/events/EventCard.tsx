@@ -15,7 +15,7 @@ interface EventCardProps {
 export function EventCard({ event, onPress }: EventCardProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const isFree = !event.is_paid || !event.price;
+  const isFree = !event.is_paid || !event.price_cents;
   const sportColor = getSportColor(event.sport);
   const hostFirstName = event.profiles?.first_name ?? 'Host';
 
@@ -24,6 +24,12 @@ export function EventCard({ event, onPress }: EventCardProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
+      {event.cancelled_at && (
+        <View style={styles.cancelledRibbon}>
+          <Text style={styles.cancelledRibbonText}>CANCELLED</Text>
+        </View>
+      )}
+
       {/* Top section: title + sport badge */}
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={2}>
@@ -51,7 +57,7 @@ export function EventCard({ event, onPress }: EventCardProps) {
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.bodyText}>
-              {isFree ? 'Free' : `$${event.price?.toFixed(2)}`}
+              {isFree ? 'Free' : `$${((event.price_cents ?? 0) / 100).toFixed(2)}`}
             </Text>
           </View>
         </View>
@@ -115,6 +121,17 @@ function createStyles(colors: ThemeColors) {
     },
     cardPressed: {
       opacity: 0.75,
+    },
+    cancelledRibbon: {
+      backgroundColor: colors.error,
+      paddingVertical: 4,
+      alignItems: 'center',
+    },
+    cancelledRibbonText: {
+      color: sharedColors.white,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1,
     },
     header: {
       flexDirection: 'row',
