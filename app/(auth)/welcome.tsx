@@ -18,7 +18,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.hero}>
         <Image
-          source={require('../../assets/logo-nobg-cropped.png')}
+          source={require('../../assets/logo.png')}
           style={styles.logo}
           resizeMode="contain"
           accessibilityLabel="LetsPlay logo"
