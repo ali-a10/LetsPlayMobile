@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/hooks/useAuth';
 import { useProfile, useInvalidateProfile } from '../lib/hooks/useProfile';
 import { pickAndUploadAvatar } from '../lib/utils/uploadAvatar';
-import { SPORT_OPTIONS } from '../lib/constants/sports';
+import { SportsPicker } from '../components/profile/SportsPicker';
 
 /** Screen for editing the current user's profile information. */
 export default function EditProfileScreen() {
@@ -82,13 +82,6 @@ export default function EditProfileScreen() {
     const first = firstName?.[0] ?? '';
     const last = lastName?.[0] ?? '';
     return `${first}${last}`.toUpperCase();
-  }
-
-  /** Toggles a sport in the favourite sports selection. */
-  function toggleSport(sport: string) {
-    setFavouriteSports((prev) =>
-      prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]
-    );
   }
 
   /** Validates required fields and returns true if all pass. */
@@ -269,25 +262,11 @@ export default function EditProfileScreen() {
           error={errors.phone}
         />
 
-        {/* Favourite Sports */}
-        <View style={styles.sportsSection}>
-          <Text style={styles.sportsLabel}>Favourite Sports</Text>
-          <View style={styles.sportsContainer}>
-            {SPORT_OPTIONS.map((sport) => (
-              <Button
-                key={sport.value}
-                title={sport.label}
-                variant={favouriteSports.includes(sport.value) ? 'primary' : 'outline'}
-                onPress={() => toggleSport(sport.value)}
-                style={
-                  favouriteSports.includes(sport.value)
-                    ? [styles.sportButton, styles.sportButtonSelected]
-                    : styles.sportButton
-                }
-              />
-            ))}
-          </View>
-        </View>
+        <SportsPicker
+          label="Favourite Sports"
+          value={favouriteSports}
+          onChange={setFavouriteSports}
+        />
 
         <Input
           label="About Me"
@@ -399,28 +378,6 @@ function createStyles(colors: ThemeColors) {
     formContent: {
       padding: 24,
       paddingBottom: 40,
-    },
-    sportsSection: {
-      marginBottom: 16,
-    },
-    sportsLabel: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: colors.text,
-      marginBottom: 10,
-    },
-    sportsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-    sportButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderWidth: 1,
-    },
-    sportButtonSelected: {
-      backgroundColor: colors.tabBarActive,
     },
     textArea: {
       height: 100,

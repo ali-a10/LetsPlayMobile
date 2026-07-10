@@ -16,6 +16,10 @@ export function getSportColor(sport: string): string {
     case 'football':     return '#92400E';
     case 'baseball':     return '#B45309';
     case 'table_tennis': return '#6366F1';
+    case 'cricket':      return '#DC2626';
+    case 'badminton':    return '#EC4899';
+    case 'squash':       return '#0E7490';
+    case 'cycling':      return '#059669';
     default:           return '#0D5C63';
   }
 }
@@ -36,6 +40,10 @@ export function getSportLabel(sport: string): string {
     case 'football':     return 'Football';
     case 'baseball':     return 'Baseball';
     case 'table_tennis': return 'Table Tennis';
+    case 'cricket':      return 'Cricket';
+    case 'badminton':    return 'Badminton';
+    case 'squash':       return 'Squash';
+    case 'cycling':      return 'Cycling';
     default:           return sport ?? 'Sport';
   }
 }
@@ -56,6 +64,10 @@ export function getSportIcon(sport: string): keyof typeof Ionicons.glyphMap {
     case 'football':     return 'american-football-outline';
     case 'baseball':     return 'baseball-outline';
     case 'table_tennis': return 'ellipse-outline';
+    case 'cricket':      return 'disc-outline';
+    case 'badminton':    return 'tennisball-outline';
+    case 'squash':       return 'tennisball-outline';
+    case 'cycling':      return 'bicycle-outline';
     default:           return 'trophy-outline';
   }
 }

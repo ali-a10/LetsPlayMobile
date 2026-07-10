@@ -1,17 +1,20 @@
-/** Predefined list of sports available for events and user profiles. */
+/** Predefined list of sports available for events and user profiles. Sorted alphabetically. */
 export const SPORT_OPTIONS = [
-  { label: 'Soccer', value: 'soccer' },
-  { label: 'Basketball', value: 'basketball' },
-  { label: 'Volleyball', value: 'volleyball' },
-  { label: 'Pickleball', value: 'pickleball' },
+  { label: 'Badminton', value: 'badminton' },
   { label: 'Baseball', value: 'baseball' },
+  { label: 'Basketball', value: 'basketball' },
+  { label: 'Cricket', value: 'cricket' },
   { label: 'Cycling', value: 'cycling' },
   { label: 'Football', value: 'football' },
   { label: 'Golf', value: 'golf' },
   { label: 'Hockey', value: 'hockey' },
   { label: 'Padel', value: 'padel' },
+  { label: 'Pickleball', value: 'pickleball' },
   { label: 'Running', value: 'running' },
+  { label: 'Soccer', value: 'soccer' },
+  { label: 'Squash', value: 'squash' },
   { label: 'Swimming', value: 'swimming' },
   { label: 'Table Tennis', value: 'table_tennis' },
   { label: 'Tennis', value: 'tennis' },
+  { label: 'Volleyball', value: 'volleyball' },
 ];
