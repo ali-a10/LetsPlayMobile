@@ -390,6 +390,86 @@ export type Database = {
           },
         ];
       };
+      push_tokens: {
+        Row: {
+          token: string;
+          user_id: string;
+          platform: 'ios' | 'android';
+          updated_at: string;
+        };
+        Insert: {
+          token: string;
+          user_id: string;
+          platform: 'ios' | 'android';
+          updated_at?: string;
+        };
+        Update: {
+          token?: string;
+          user_id?: string;
+          platform?: 'ios' | 'android';
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          event_id: string | null;
+          title: string;
+          body: string;
+          url: string;
+          dedupe_key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          event_id?: string | null;
+          title: string;
+          body: string;
+          url?: string;
+          dedupe_key?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          event_id?: string | null;
+          title?: string;
+          body?: string;
+          url?: string;
+          dedupe_key?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {
@@ -408,6 +488,14 @@ export type Database = {
       finalize_paid_join: {
         Args: { p_payment_intent_id: string; p_charge_id?: string };
         Returns: string;
+      };
+      register_push_token: {
+        Args: { p_token: string; p_platform: string };
+        Returns: undefined;
+      };
+      unregister_push_token: {
+        Args: { p_token: string };
+        Returns: undefined;
       };
     };
     Enums: {
@@ -450,3 +538,5 @@ export type Report = Database['public']['Tables']['reports']['Row'];
 export type Feedback = Database['public']['Tables']['feedback']['Row'];
 export type Payment = Database['public']['Tables']['payments']['Row'];
 export type StripeEvent = Database['public']['Tables']['stripe_events']['Row'];
+export type PushToken = Database['public']['Tables']['push_tokens']['Row'];
+export type Notification = Database['public']['Tables']['notifications']['Row'];

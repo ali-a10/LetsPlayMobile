@@ -14,6 +14,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
+import { unregisterPushToken } from '../../lib/notifications/push';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { useUserStats } from '../../lib/hooks/useUserStats';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
@@ -38,6 +39,7 @@ export default function ProfileScreen() {
   const handleConfirmLogOut = async () => {
     setLoggingOut(true);
     setLogOutError(null);
+    await unregisterPushToken();
     const { error } = await supabase.auth.signOut();
     if (error) {
       setLogOutError(error.message);

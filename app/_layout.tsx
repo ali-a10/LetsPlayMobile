@@ -4,6 +4,7 @@ import { Linking, StatusBar } from 'react-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 import { useAuth } from '../lib/hooks/useAuth';
+import { usePushNotifications } from '../lib/hooks/usePushNotifications';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { useThemeStore } from '../lib/stores/themeStore';
 import { supabase } from '../lib/supabase';
@@ -18,6 +19,7 @@ function ThemedStatusBar() {
 
 function AuthGate() {
   const { session, loading } = useAuth();
+  usePushNotifications(session);
   const segments = useSegments();
   const router = useRouter();
   const [checkingProfile, setCheckingProfile] = useState(false);
