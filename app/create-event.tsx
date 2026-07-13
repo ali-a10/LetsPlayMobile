@@ -193,8 +193,10 @@ export default function CreateEventScreen() {
 
     if (isPaid) {
       const parsedPrice = parseFloat(price);
-      if (!price.trim() || isNaN(parsedPrice) || parsedPrice <= 0) {
+      if (!price.trim() || isNaN(parsedPrice)) {
         newErrors.price = 'Enter a valid price';
+      } else if (parsedPrice < 1 || parsedPrice > 500) {
+        newErrors.price = 'Price must be between $1 and $500';
       }
     }
 
@@ -467,7 +469,7 @@ export default function CreateEventScreen() {
 
           {isPaid && (
             <Input
-              label="Price ($)"
+              label="Price ($1 – $500)"
               placeholder="0.00"
               value={price}
               onChangeText={handlePriceChange}
