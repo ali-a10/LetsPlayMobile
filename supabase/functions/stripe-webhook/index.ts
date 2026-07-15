@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { refundPaymentFull } from '../_shared/refunds.ts';
+import { notifyUsers } from '../_shared/push.ts';
+import { refundProcessedCopy } from '../_shared/messages.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -198,7 +200,7 @@ async function handleChargeRefunded(
 ): Promise<void> {
   const { data: payment } = await adminClient
     .from('payments')
-    .select('id, status')
+    .select('id, status, user_id, event_id')
     .eq('stripe_charge_id', charge.id)
     .maybeSingle();
 
@@ -213,6 +215,23 @@ async function handleChargeRefunded(
   if (error) {
     throw new Error(`finalize_refund failed for charge ${charge.id}: ${error.message}`);
   }
+
+  // Refund is final — tell the participant (no amount, per product rule). Never throws.
+  const { data: event } = await adminClient
+    .from('events')
+    .select('title')
+    .eq('id', payment.event_id)
+    .maybeSingle();
+  const copy = refundProcessedCopy(event?.title ?? 'your event');
+  await notifyUsers(adminClient, {
+    userIds: [payment.user_id],
+    type: 'refund_processed',
+    title: copy.title,
+    body: copy.body,
+    url: `/event/${payment.event_id}`,
+    eventId: payment.event_id,
+    dedupeKey: `refund:${payment.id}`,
+  });
 }
 
 /**

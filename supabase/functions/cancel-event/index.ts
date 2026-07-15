@@ -1,6 +1,8 @@
 import { corsHeaders, json, fail } from '../_shared/cors.ts';
 import { createAdminClient, getUserFromRequest } from '../_shared/supabase.ts';
 import { refundPaymentFull } from '../_shared/refunds.ts';
+import { notifyUsers } from '../_shared/push.ts';
+import { eventCancelledCopy } from '../_shared/messages.ts';
 
 /**
  * Cancels an event on behalf of its host (§7.2): verifies the caller is the host and the 12-hour
@@ -21,7 +23,7 @@ Deno.serve(async (req: Request) => {
     // 1. Load the event and verify the caller is its host.
     const { data: event } = await admin
       .from('events')
-      .select('id, host_id, is_paid, cancelled_at')
+      .select('id, host_id, is_paid, cancelled_at, title')
       .eq('id', event_id)
       .maybeSingle();
     if (!event) return fail('EVENT_NOT_FOUND', 'This event no longer exists.', 404);
@@ -55,6 +57,24 @@ Deno.serve(async (req: Request) => {
       .update({ cancelled_at: new Date().toISOString() })
       .eq('id', event_id);
     if (cancelErr) throw new Error(`failed to mark event cancelled: ${cancelErr.message}`);
+
+    // 4b. Tell every participant. Before the refund loop so the news is immediate; notifyUsers
+    //     never throws, so a push hiccup can't abort the refunds below.
+    const { data: participantRows } = await admin
+      .from('participants')
+      .select('user_id')
+      .eq('event_id', event_id);
+    const participantIds = (participantRows ?? []).map((row) => row.user_id);
+    const copy = eventCancelledCopy(event.title, event.is_paid);
+    await notifyUsers(admin, {
+      userIds: participantIds,
+      type: 'event_cancelled',
+      title: copy.title,
+      body: copy.body,
+      url: `/event/${event_id}`,
+      eventId: event_id,
+      dedupeKey: `cancel:${event_id}`,
+    });
 
     // 5. Free event: nothing to refund.
     if (!event.is_paid) {

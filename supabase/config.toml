@@ -378,6 +378,11 @@ verify_jwt = false
 [functions.process-payouts]
 verify_jwt = false
 
+# The participants-table trigger calls this via pg_net with a shared secret (x-notify-secret),
+# not a Supabase JWT, so gateway JWT verification must be off; the function checks the secret.
+[functions.notify]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

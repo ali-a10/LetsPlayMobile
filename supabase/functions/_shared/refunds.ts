@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { stripe } from './stripe.ts';
+import { notifyUsers } from './push.ts';
+import { refundProcessedCopy } from './messages.ts';
 
 /**
  * Issues a FULL Stripe refund for a succeeded payment (platform-initiated → 100%, platform absorbs
@@ -21,5 +23,23 @@ export async function refundPaymentFull(admin: SupabaseClient, payment: any): Pr
     p_stripe_refund_id: refund.id,
   });
   if (error) throw new Error(`finalize_refund failed: ${error.message}`);
+
+  // Refund is final — tell the participant (no amount, per product rule). Never throws.
+  const { data: event } = await admin
+    .from('events')
+    .select('title')
+    .eq('id', payment.event_id)
+    .maybeSingle();
+  const copy = refundProcessedCopy(event?.title ?? 'your event');
+  await notifyUsers(admin, {
+    userIds: [payment.user_id],
+    type: 'refund_processed',
+    title: copy.title,
+    body: copy.body,
+    url: `/event/${payment.event_id}`,
+    eventId: payment.event_id,
+    dedupeKey: `refund:${payment.id}`,
+  });
+
   return refund.id;
 }
