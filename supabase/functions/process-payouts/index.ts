@@ -1,6 +1,8 @@
 import { json, fail } from '../_shared/cors.ts';
 import { createAdminClient } from '../_shared/supabase.ts';
 import { stripe } from '../_shared/stripe.ts';
+import { notifyUsers } from '../_shared/push.ts';
+import { payoutSentCopy } from '../_shared/messages.ts';
 
 /**
  * Hourly payout worker (§8.2). Invoked only by the pg_cron job, which passes the service-role key as a
@@ -30,6 +32,11 @@ Deno.serve(async (req: Request) => {
     let skipped = 0; // insufficient balance — untouched, retries next run
     let failed = 0; // flagged with payout_failed_reason — needs review
 
+    // Notify each host once per event, not once per participant-payment (a 10-person event
+    // creates 10 transfers in this loop). The dedupe key also suppresses re-notification if
+    // later transfers for the same event land in a subsequent hourly run.
+    const notifiedEvents = new Set<string>();
+
     // 3. Pay each host their share. One bad transfer must not abort the batch (§8.3).
     for (const row of due ?? []) {
       // Tracks whether Stripe created the transfer before a later step failed — see the catch below.
@@ -58,6 +65,27 @@ Deno.serve(async (req: Request) => {
           .eq('id', row.payment_id);
         if (updErr) throw new Error(`failed to mark payment transferred: ${updErr.message}`);
         transferred++;
+
+        if (!notifiedEvents.has(row.event_id)) {
+          notifiedEvents.add(row.event_id);
+          const { data: ev } = await admin
+            .from('events')
+            .select('title, host_id')
+            .eq('id', row.event_id)
+            .maybeSingle();
+          if (ev) {
+            const copy = payoutSentCopy(ev.title);
+            await notifyUsers(admin, {
+              userIds: [ev.host_id],
+              type: 'payout_sent',
+              title: copy.title,
+              body: copy.body,
+              url: '/payouts',
+              eventId: row.event_id,
+              dedupeKey: `payout:${row.event_id}`,
+            });
+          }
+        }
       } catch (err) {
         const code = (err as any)?.code ?? (err as any)?.raw?.code;
         const message = err instanceof Error ? err.message : 'Transfer failed';

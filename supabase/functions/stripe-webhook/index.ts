@@ -2,7 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { refundPaymentFull } from '../_shared/refunds.ts';
 import { notifyUsers } from '../_shared/push.ts';
-import { refundProcessedCopy } from '../_shared/messages.ts';
+import {
+  refundProcessedCopy,
+  accountProblemCopy,
+  disputeCopy,
+  transferReversedCopy,
+} from '../_shared/messages.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -125,16 +130,37 @@ async function handleAccountUpdated(
 ): Promise<void> {
   const account = await stripe.accounts.retrieve(accountId);
 
+  // Snapshot the previous state so we can detect the payouts-stopped transition below.
+  const { data: prev } = await adminClient
+    .from('profiles')
+    .select('id, stripe_payouts_enabled')
+    .eq('stripe_account_id', accountId)
+    .maybeSingle();
+
+  const nowEnabled = Boolean(account.charges_enabled && account.payouts_enabled);
   const { error } = await adminClient
     .from('profiles')
     .update({
       stripe_onboarding_complete: account.details_submitted ?? false,
-      stripe_payouts_enabled: Boolean(account.charges_enabled && account.payouts_enabled),
+      stripe_payouts_enabled: nowEnabled,
     })
     .eq('stripe_account_id', accountId);
 
   if (error) {
     throw new Error(`Failed to update profile for account ${accountId}: ${error.message}`);
+  }
+
+  // Payouts just turned OFF for a previously-working account → the host must act.
+  // Only the transition notifies: steady-state disabled (mid-onboarding) stays silent.
+  if (prev && prev.stripe_payouts_enabled && !nowEnabled) {
+    const copy = accountProblemCopy();
+    await notifyUsers(adminClient, {
+      userIds: [prev.id],
+      type: 'account_problem',
+      title: copy.title,
+      body: copy.body,
+      url: '/payouts',
+    });
   }
 }
 
@@ -273,18 +299,39 @@ async function handleDisputeCreated(
       : dispute.payment_intent?.id ?? null;
   const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id ?? null;
 
-  let query = adminClient
+  let select = adminClient
     .from('payments')
-    .update({ disputed_at: new Date().toISOString() })
-    .is('disputed_at', null);
-  if (piId) query = query.eq('stripe_payment_intent_id', piId);
-  else if (chargeId) query = query.eq('stripe_charge_id', chargeId);
+    .select('id, host_id, event_id, disputed_at');
+  if (piId) select = select.eq('stripe_payment_intent_id', piId);
+  else if (chargeId) select = select.eq('stripe_charge_id', chargeId);
   else return;
 
-  const { error } = await query;
+  const { data: payment } = await select.maybeSingle();
+  if (!payment || payment.disputed_at) return; // unknown or already stamped → idempotent no-op
+
+  const { error } = await adminClient
+    .from('payments')
+    .update({ disputed_at: new Date().toISOString() })
+    .eq('id', payment.id);
   if (error) {
     throw new Error(`Failed to mark payment disputed (pi=${piId}, charge=${chargeId}): ${error.message}`);
   }
+
+  const { data: ev } = await adminClient
+    .from('events')
+    .select('title')
+    .eq('id', payment.event_id)
+    .maybeSingle();
+  const copy = disputeCopy(ev?.title ?? 'your event');
+  await notifyUsers(adminClient, {
+    userIds: [payment.host_id],
+    type: 'dispute_created',
+    title: copy.title,
+    body: copy.body,
+    url: '/payouts',
+    eventId: payment.event_id,
+    dedupeKey: `dispute:${payment.id}`,
+  });
 }
 
 /**
@@ -296,11 +343,34 @@ async function handleTransferReversed(
   adminClient: ReturnType<typeof createClient>,
   transfer: Stripe.Transfer
 ): Promise<void> {
+  const { data: payment } = await adminClient
+    .from('payments')
+    .select('id, host_id, event_id')
+    .eq('stripe_transfer_id', transfer.id)
+    .maybeSingle();
+  if (!payment) return;
+
   const { error } = await adminClient
     .from('payments')
     .update({ payout_failed_reason: 'Transfer reversed — needs manual review' })
-    .eq('stripe_transfer_id', transfer.id);
+    .eq('id', payment.id);
   if (error) {
     throw new Error(`Failed to flag reversed transfer ${transfer.id}: ${error.message}`);
   }
+
+  const { data: ev } = await adminClient
+    .from('events')
+    .select('title')
+    .eq('id', payment.event_id)
+    .maybeSingle();
+  const copy = transferReversedCopy(ev?.title ?? 'your event');
+  await notifyUsers(adminClient, {
+    userIds: [payment.host_id],
+    type: 'transfer_reversed',
+    title: copy.title,
+    body: copy.body,
+    url: '/payouts',
+    eventId: payment.event_id,
+    dedupeKey: `reversal:${payment.id}`,
+  });
 }
