@@ -83,9 +83,9 @@ describe('push notification copy', () => {
       title: 'Sunday Basketball is tomorrow',
       body: 'See you at Central Park Court 2!',
     });
-    expect(reminder2Copy('Sunday Basketball', 'Central Park Court 2')).toEqual({
+    expect(reminder2Copy('Sunday Basketball')).toEqual({
       title: 'Sunday Basketball starts in about 2 hours',
-      body: 'See you at Central Park Court 2!',
+      body: 'See you there!',
     });
   });
 

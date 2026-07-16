@@ -96,10 +96,10 @@ export function hostReminder24Copy(eventTitle: string, participantCount: number)
 }
 
 /** Builds the participant-facing 2-hour reminder (no clock time — server doesn't know user TZ). */
-export function reminder2Copy(eventTitle: string, location: string): PushCopy {
+export function reminder2Copy(eventTitle: string): PushCopy {
   return {
     title: `${eventTitle} starts in about 2 hours`,
-    body: `See you at ${location}!`,
+    body: 'See you there!',
   };
 }
 
