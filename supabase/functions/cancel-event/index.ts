@@ -64,7 +64,11 @@ Deno.serve(async (req: Request) => {
       .from('participants')
       .select('user_id')
       .eq('event_id', event_id);
-    const participantIds = (participantRows ?? []).map((row) => row.user_id);
+    // Exclude the host (they may have joined their own event) — they just cancelled it,
+    // so a "was cancelled" push to them would be redundant.
+    const participantIds = (participantRows ?? [])
+      .map((row) => row.user_id)
+      .filter((id) => id !== event.host_id);
     const copy = eventCancelledCopy(event.title, event.is_paid);
     await notifyUsers(admin, {
       userIds: participantIds,

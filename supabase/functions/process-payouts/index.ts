@@ -67,13 +67,16 @@ Deno.serve(async (req: Request) => {
         transferred++;
 
         if (!notifiedEvents.has(row.event_id)) {
-          notifiedEvents.add(row.event_id);
           const { data: ev } = await admin
             .from('events')
             .select('title, host_id')
             .eq('id', row.event_id)
             .maybeSingle();
           if (ev) {
+            // Mark notified only after a successful fetch, so a transient lookup failure
+            // doesn't permanently swallow the payout push (the row is already transferred
+            // and won't recur in a later run).
+            notifiedEvents.add(row.event_id);
             const copy = payoutSentCopy(ev.title);
             await notifyUsers(admin, {
               userIds: [ev.host_id],
