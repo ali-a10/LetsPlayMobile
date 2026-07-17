@@ -44,6 +44,17 @@ describe('buildEarningsSummary', () => {
     expect(s.events[0].status).toBe('held');
   });
 
+  it('classifies a transferred payment that was later reversed as held, not paid', () => {
+    // A transfer reversal sets payout_failed_reason but leaves status = 'transferred';
+    // the flag must win over the transferred=paid classification.
+    const s = buildEarningsSummary([
+      row({ status: 'transferred', payout_failed_reason: 'transfer_failed:x' }),
+    ]);
+    expect(s.totalHeldCents).toBe(1000);
+    expect(s.totalPaidCents).toBe(0);
+    expect(s.events[0].status).toBe('held');
+  });
+
   it('classifies payments on a payout-held event as held', () => {
     const s = buildEarningsSummary([
       row({ events: { title: 'T', date: '2026-07-01T18:00:00Z', payout_held_at: '2026-07-01T20:00:00Z' } }),

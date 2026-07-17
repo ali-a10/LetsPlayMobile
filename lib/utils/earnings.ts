@@ -33,10 +33,11 @@ export type EarningsSummary = {
 
 /** Classifies one payment row into the paid/pending/held bucket its host-share currently sits in. */
 function classify(p: EarningsPayment): EarningStatus | null {
-  if (p.status === 'transferred') return 'paid';
-  if (p.status !== 'succeeded') return null; // refunded/failed/pending money never reaches the host
+  // Only succeeded (not yet paid out) and transferred (paid out) money is the host's; refunded/failed/pending never reaches them.
+  if (p.status !== 'transferred' && p.status !== 'succeeded') return null;
+  // A hold flag wins over the paid/pending split — e.g. a reversed transfer keeps status='transferred' but sets payout_failed_reason.
   if (p.disputed_at || p.payout_failed_reason || p.events?.payout_held_at) return 'held';
-  return 'pending';
+  return p.status === 'transferred' ? 'paid' : 'pending';
 }
 
 /**
