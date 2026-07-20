@@ -76,7 +76,8 @@ export default function MyEventsScreen() {
     refetch: () => Promise<unknown>,
     events: EventWithHost[] | undefined,
     emptyText: string,
-    emptyCta: React.ReactNode
+    emptyCta: React.ReactNode,
+    listNote?: string
   ) => {
     if (isLoading) {
       return (
@@ -114,6 +115,9 @@ export default function MyEventsScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          listNote ? <Text style={styles.listNote}>{listNote}</Text> : null
+        }
         onRefresh={createPullRefresh(refetch)}
         refreshing={manualRefreshing}
       />
@@ -127,7 +131,7 @@ export default function MyEventsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Events</Text>
-        <Text style={styles.headerSubtitle}>Your events</Text>
+        <Text style={styles.headerSubtitle}>Keep track of your games</Text>
       </View>
 
       {/* Content */}
@@ -189,7 +193,8 @@ export default function MyEventsScreen() {
             refetchPast,
             pastEvents,
             'No events ended in the last 7 days.',
-            null
+            null,
+            'Events stay here for 7 days after they end.'
           )}
       </View>
     </SafeAreaView>
@@ -261,6 +266,13 @@ function createStyles(colors: ThemeColors) {
     list: {
       paddingHorizontal: 16,
       paddingBottom: 20,
+    },
+    listNote: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+      paddingBottom: 12,
     },
     loader: {
       marginTop: 40,
