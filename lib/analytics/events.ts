@@ -36,7 +36,6 @@ export type AnalyticsEvents = {
   // Growth & engagement
   share_tapped: { event_id: string; sport: string };
   search_performed: { query_length: number; result_count: number };
-  notification_opened: { target: string };
   feedback_submitted: { category: string };
 };
 

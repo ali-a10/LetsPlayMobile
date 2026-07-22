@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { supabase } from '../supabase';
 import { friendlyErrorMessage } from '../utils/errors';
 import { useAuth } from './useAuth';
+import { track } from '../analytics';
 import { FeedbackCategory } from '../types/database';
 
 export interface SubmitFeedbackInput {
@@ -37,6 +38,9 @@ export function useSubmitFeedback() {
         platform: getPlatform(),
       });
       if (error) throw new Error(friendlyErrorMessage(error));
+    },
+    onSuccess: (_data, variables) => {
+      track('feedback_submitted', { category: variables.category });
     },
   });
 }

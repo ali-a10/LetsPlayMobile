@@ -21,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
+import { track } from '../../lib/analytics';
+import { useDebouncedValue } from '../../lib/hooks/useDebouncedValue';
 import { useEvents, EventWithHost } from '../../lib/hooks/useEvents';
 import { useFilterStore } from '../../lib/stores/filterStore';
 import { useLocationStore } from '../../lib/stores/useLocationStore';
@@ -66,6 +68,18 @@ export default function HomeScreen() {
   const setHasSpots = useFilterStore((s) => s.setHasSpots);
   const sortBy = useFilterStore((s) => s.sortBy);
   const setSortBy = useFilterStore((s) => s.setSortBy);
+
+  // Track a search once typing settles, with result count — never the query text itself.
+  const debouncedSearchText = useDebouncedValue(searchText, 1200);
+  useEffect(() => {
+    const q = debouncedSearchText.trim();
+    if (q.length > 0) {
+      track('search_performed', {
+        query_length: q.length,
+        result_count: events?.length ?? 0,
+      });
+    }
+  }, [debouncedSearchText]);
 
   const latitude = useLocationStore((s) => s.latitude);
   const longitude = useLocationStore((s) => s.longitude);
