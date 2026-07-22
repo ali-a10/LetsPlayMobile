@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 import { functionErrorMessage } from '../utils/errors';
 import { useAuth } from './useAuth';
+import { track } from '../analytics';
 
 /** Calls the refund-participant Edge Function to cancel a paid spot (refunding the participant), then refreshes the same caches as leaving an event. */
 export function useCancelSpot(eventId: string) {
@@ -16,6 +17,7 @@ export function useCancelSpot(eventId: string) {
       if (error) throw new Error(await functionErrorMessage(error));
     },
     onSuccess: () => {
+      track('spot_cancelled', { event_id: eventId, was_paid: true });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['my-joined-events', user?.id] });
