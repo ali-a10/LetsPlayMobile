@@ -22,6 +22,7 @@ import { PAID_EVENTS_ENABLED } from '../../lib/constants/featureFlags';
 import { getSportColor, getSportIcon, getSportLabel } from '../../lib/utils/sports';
 import { shareEvent } from '../../lib/utils/shareEvent';
 import { isWithinLeaveCutoff, isWithinLateCancelWindow, isWithinNoShowWindow } from '../../lib/utils/eventTiming';
+import { track } from '../../lib/analytics';
 
 /** Formats an ISO date string to "Wed, Dec 11". */
 function formatDate(iso: string): string {
@@ -43,6 +44,17 @@ export default function EventDetailScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { data: event, isLoading, error: fetchError } = useEventDetail(id);
   const joinMutation = useJoinEvent(id);
+
+  // Fires once per event load; re-fires only when navigating to a different event.
+  useEffect(() => {
+    if (event) {
+      track('event_viewed', {
+        event_id: event.id,
+        sport: event.sport,
+        is_paid: event.is_paid,
+      });
+    }
+  }, [event?.id]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
