@@ -108,7 +108,7 @@ export default function EditProfileScreen() {
     setUploadingAvatar(true);
     const result = await pickAndUploadAvatar(user.id);
     setUploadingAvatar(false);
-    if ('cancelled' in result && result.cancelled) return;
+    if ('cancelled' in result) return;
     if (!result.success) { Alert.alert('Error', result.error); return; }
     setPendingAvatarUrl(result.publicUrl);
   }

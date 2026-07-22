@@ -76,7 +76,7 @@ function AuthGate() {
         .from('profiles')
         .select('id')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
       setCheckingProfile(false);
 
       if (error) {

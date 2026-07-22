@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button';
 import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../lib/constants/colors';
 import { supabase } from '../lib/supabase';
-import { friendlyErrorMessage } from '../lib/utils/errors';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 
@@ -52,7 +51,8 @@ export default function DeleteAccountScreen() {
       await supabase.auth.signOut();
       router.replace('/(auth)/welcome');
     } catch (err) {
-      setError(friendlyErrorMessage(err));
+      const message = err instanceof Error ? err.message : 'Deletion failed. Please try again.';
+      setError(message);
       setLoading(false);
     }
   };
