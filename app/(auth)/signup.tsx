@@ -18,6 +18,7 @@ import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
+import { track } from '../../lib/analytics';
 
 /** Step 1 of signup: collects name, email, password and creates auth user. */
 export default function SignupScreen() {
@@ -85,6 +86,7 @@ export default function SignupScreen() {
     if (error) {
       Alert.alert('Signup failed', error.message);
     } else {
+      track('signup_completed', { method: 'email' });
       setName(firstName.trim(), lastName.trim());
       router.replace('/(auth)/onboarding-details');
     }
