@@ -54,7 +54,8 @@
           "enableGooglePay": false
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-localization"
     ],
     "extra": {
       "router": {},
