@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useThemeColors } from '../../lib/hooks/useThemeColors';
 import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { useAuth } from '../../lib/hooks/useAuth';
@@ -46,6 +47,7 @@ export default function EventDetailScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
 
   const leaveMutation = useLeaveEvent(id);
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
@@ -83,6 +85,14 @@ export default function EventDetailScreen() {
       setPaidSheetVisible(false);
       payHook.reset();
     }
+  };
+
+  /** Copies the event address to the clipboard and briefly swaps the icon to a checkmark. */
+  const handleCopyAddress = async () => {
+    if (!event) return;
+    await Clipboard.setStringAsync(event.location);
+    setAddressCopied(true);
+    setTimeout(() => setAddressCopied(false), 2000);
   };
 
   const handleConfirm = () => {
@@ -338,6 +348,17 @@ export default function EventDetailScreen() {
                 <Text style={styles.detailLabel}>Location</Text>
                 <Text style={styles.detailValue}>{event.location}</Text>
               </View>
+              <Pressable
+                onPress={handleCopyAddress}
+                hitSlop={8}
+                accessibilityLabel="Copy address"
+              >
+                <Ionicons
+                  name={addressCopied ? 'checkmark-outline' : 'copy-outline'}
+                  size={20}
+                  color={addressCopied ? colors.success : colors.textMuted}
+                />
+              </Pressable>
             </View>
 
             <View style={styles.divider} />
