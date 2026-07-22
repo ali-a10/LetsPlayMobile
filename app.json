@@ -55,7 +55,15 @@
         }
       ],
       "expo-notifications",
-      "expo-localization"
+      "expo-localization",
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://sentry.io/",
+          "organization": "letsplay-kd",
+          "project": "react-native"
+        }
+      ]
     ],
     "extra": {
       "router": {},

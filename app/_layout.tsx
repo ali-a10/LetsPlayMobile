@@ -9,10 +9,19 @@ import { useThemeColors } from '../lib/hooks/useThemeColors';
 import { useThemeStore } from '../lib/stores/themeStore';
 import { supabase } from '../lib/supabase';
 import { initAnalytics, identifyUser, resetAnalytics } from '../lib/analytics';
+import * as Sentry from '@sentry/react-native';
 
 const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
 
 initAnalytics();
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  // Disabled entirely when no DSN is configured (local dev without .env.local).
+  enabled: !!process.env.EXPO_PUBLIC_SENTRY_DSN,
+  // Never attach user email/username to crash reports.
+  sendDefaultPii: false,
+});
 
 /** Provides a theme-aware StatusBar that updates when the user toggles dark mode. */
 function ThemedStatusBar() {
@@ -111,7 +120,7 @@ function AuthGate() {
   return <Stack screenOptions={{ headerShown: false, gestureEnabled: true }} />;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} urlScheme="letsplay">
       <QueryProvider>
@@ -121,3 +130,5 @@ export default function RootLayout() {
     </StripeProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
