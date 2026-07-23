@@ -27,6 +27,7 @@ import { useAuth } from '../lib/hooks/useAuth';
 import { usePayoutStatus } from '../lib/hooks/useStripePayouts';
 import { PAID_EVENTS_ENABLED } from '../lib/constants/featureFlags';
 import { friendlyErrorMessage } from '../lib/utils/errors';
+import { track } from '../lib/analytics';
 
 /** Screen for creating a new sports event. */
 export default function CreateEventScreen() {
@@ -240,6 +241,12 @@ export default function CreateEventScreen() {
         console.error('Event creation failed:', error);
         Alert.alert('Error', friendlyErrorMessage(error));
       } else {
+        track('event_created', {
+          sport: sport!,
+          is_paid: isPaid,
+          price_cents: isPaid ? Math.round(parseFloat(price) * 100) : null,
+          max_participants: parseInt(maxParticipants, 10) || 10,
+        });
         queryClient.invalidateQueries({ queryKey: ['events'] });
         queryClient.invalidateQueries({ queryKey: ['my-hosted-events', user.id] });
         queryClient.invalidateQueries({ queryKey: ['my-joined-events', user.id] });

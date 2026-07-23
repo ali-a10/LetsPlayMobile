@@ -54,7 +54,16 @@
           "enableGooglePay": false
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-localization",
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://sentry.io/",
+          "organization": "letsplay-kd",
+          "project": "react-native"
+        }
+      ]
     ],
     "extra": {
       "router": {},

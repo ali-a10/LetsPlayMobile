@@ -16,6 +16,7 @@ import { ThemeColors, sharedColors } from '../../lib/constants/colors';
 import { supabase } from '../../lib/supabase';
 import { useOnboardingStore } from '../../lib/stores/onboardingStore';
 import { SportsPicker } from '../../components/profile/SportsPicker';
+import { track } from '../../lib/analytics';
 
 /** Step 3 of signup: collects optional profile details and inserts the profile row. */
 export default function OnboardingProfileScreen() {
@@ -68,6 +69,7 @@ export default function OnboardingProfileScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
+      track('profile_completed', {});
       store.reset();
       router.replace('/(tabs)');
     }

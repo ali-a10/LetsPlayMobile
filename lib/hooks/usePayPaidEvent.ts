@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 import { functionErrorMessage } from '../utils/errors';
 import { useAuth } from './useAuth';
+import { track } from '../analytics';
 
 export type PayStatus =
   | 'idle'
@@ -42,6 +43,7 @@ export function usePayPaidEvent(eventId: string) {
         body: { event_id: eventId },
       });
       if (ciErr) {
+        track('payment_failed', { event_id: eventId, stage: 'create-intent' });
         setError(await functionErrorMessage(ciErr));
         setStatus('failed');
         return;
@@ -65,12 +67,14 @@ export function usePayPaidEvent(eventId: string) {
         allowsDelayedPaymentMethods: false,
       });
       if (init.error) {
+        track('payment_failed', { event_id: eventId, stage: 'init-sheet' });
         setError(init.error.message);
         setStatus('failed');
         return;
       }
 
       setStatus('sheet-open');
+      track('payment_sheet_opened', { event_id: eventId });
       const sheet = await presentPaymentSheet();
       if (sheet.error) {
         // User dismissed the sheet → not an error; the PI stays pending for a later retry.
@@ -78,6 +82,7 @@ export function usePayPaidEvent(eventId: string) {
           setStatus('idle');
           return;
         }
+        track('payment_failed', { event_id: eventId, stage: 'present-sheet' });
         setError(sheet.error.message);
         setStatus('failed');
         return;
@@ -91,11 +96,14 @@ export function usePayPaidEvent(eventId: string) {
       // Even if confirm errors, the webhook may finalize the join — refetch so server truth wins.
       invalidate();
       if (cjErr) {
+        track('payment_failed', { event_id: eventId, stage: 'confirm' });
         setError(await functionErrorMessage(cjErr));
         setStatus('failed');
         return;
       }
 
+      track('payment_succeeded', { event_id: eventId });
+      track('event_join_confirmed', { event_id: eventId, is_paid: true });
       setStatus('joined');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again later.');

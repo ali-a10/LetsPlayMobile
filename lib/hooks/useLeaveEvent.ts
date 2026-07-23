@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 import { friendlyErrorMessage } from '../utils/errors';
 import { useAuth } from './useAuth';
+import { track } from '../analytics';
 
 /** Calls the leave_event RPC and invalidates event caches on success. */
 export function useLeaveEvent(eventId: string) {
@@ -16,6 +17,7 @@ export function useLeaveEvent(eventId: string) {
       if (error) throw new Error(friendlyErrorMessage(error));
     },
     onSuccess: () => {
+      track('spot_cancelled', { event_id: eventId, was_paid: false });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['my-joined-events', user?.id] });
